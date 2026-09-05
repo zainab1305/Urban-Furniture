@@ -192,9 +192,8 @@ export function SignupPage() {
           <label>
             <span>Login ID</span>
             <div
-              className={`input-with-icon ${
-                fieldErrors.loginId ? 'has-error' : loginIdAvailability === 'available' ? 'is-valid' : ''
-              }`}
+              className={`input-with-icon ${fieldErrors.loginId ? 'has-error' : loginIdAvailability === 'available' ? 'is-valid' : ''
+                }`}
             >
               <User size={16} />
               <input
