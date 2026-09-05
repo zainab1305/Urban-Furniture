@@ -124,6 +124,7 @@
 }
 
 .contact-fields {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px;
@@ -137,6 +138,7 @@
 }
 
 .contact-image-upload {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -173,6 +175,38 @@
   background: #fafcfb;
   cursor: pointer;
   text-align: center;
+}
+
+.contact-modal .portal-checkbox {
+  grid-column: 1 / -1;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #dcebe5;
+  border-radius: 5px;
+  background: #f7fbf9;
+  color: #557069;
+  font-size: 11px;
+}
+
+.contact-modal .portal-checkbox input[type='checkbox'] {
+  width: 18px !important;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.contact-modal .portal-user-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  min-width: 0;
 }
 
 .image-upload-box img {
@@ -455,7 +489,8 @@
   }
 
   .contact-modal form,
-  .contact-fields {
+  .contact-fields,
+  .contact-modal .portal-user-fields {
     grid-template-columns: 1fr;
   }
 
