@@ -9,11 +9,33 @@ const totalsFor = items => items.reduce((result, item) => {
 const numberFor = prefix => `${prefix}-${new Date().getFullYear()}-${Date.now()}`;
 const paymentTotal = allocations => allocations.reduce((sum, item) => sum + n(item.amount), 0);
 
+const accountDefinitions = {
+  'Purchase Expense': { code: '5000', type: 'EXPENSE', aliases: ['Purchase Expense', 'Purchase'] },
+  'Accounts Payable': { code: '2000', type: 'LIABILITY', aliases: ['Accounts Payable', 'Creditors', 'Creditor'] },
+  Bank: { code: '1010', type: 'ASSET', aliases: ['Bank'] },
+  Cash: { code: '1000', type: 'ASSET', aliases: ['Cash'] }
+};
+
+async function resolveAccount(transaction, name, explicitId) {
+  if (explicitId) return transaction.account.findUnique({ where: { id: explicitId } });
+  const definition = accountDefinitions[name] || { code: `AUTO-${name.replace(/\W/g, '').toUpperCase()}`, type: 'ASSET', aliases: [name] };
+  const account = await transaction.account.findFirst({ where: { isActive: true, OR: definition.aliases.map(alias => ({ name: { contains: alias, mode: 'insensitive' } })) } });
+  if (account) return account;
+  return transaction.account.upsert({ where: { code: definition.code }, update: { isActive: true }, create: { code: definition.code, name, type: definition.type } });
+}
+
+async function resolveJournal(transaction, type) {
+  const existing = await transaction.journal.findFirst({ where: { type } });
+  if (existing) return existing;
+  const names = { PURCHASE: 'Purchase Journal', BANK: 'Bank Journal', CASH: 'Cash Journal' };
+  return transaction.journal.upsert({ where: { code: `AUTO-${type}` }, update: {}, create: { code: `AUTO-${type}`, name: names[type] || `${type} Journal`, type } });
+}
+
 async function postEntry(transaction, { journalType, reference, description, partnerId, debitName, creditName, amount, debitAccountId, creditAccountId }) {
-  const journal = await transaction.journal.findFirst({ where: { type: journalType } });
-  const debit = debitAccountId ? await transaction.account.findUnique({ where: { id: debitAccountId } }) : await transaction.account.findFirst({ where: { name: { contains: debitName, mode: 'insensitive' }, isActive: true } });
-  const credit = creditAccountId ? await transaction.account.findUnique({ where: { id: creditAccountId } }) : await transaction.account.findFirst({ where: { name: { contains: creditName, mode: 'insensitive' }, isActive: true } });
-  if (!journal || !debit || !credit) return null;
+  const journal = await resolveJournal(transaction, journalType);
+  const debit = await resolveAccount(transaction, debitName, debitAccountId);
+  const credit = await resolveAccount(transaction, creditName, creditAccountId);
+  if (!journal || !debit || !credit) throw Object.assign(new Error('Unable to resolve accounts for automatic journal entry.'), { statusCode: 400 });
   return transaction.journalEntry.create({ data: { journalId: journal.id, date: new Date(), reference, description, status: 'POSTED', items: { create: [{ accountId: debit.id, partnerId, debit: amount, credit: 0 }, { accountId: credit.id, partnerId, debit: 0, credit: amount }] } } });
 }
 

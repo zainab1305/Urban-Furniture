@@ -67,14 +67,14 @@ export async function listJournalEntries(request, response) {
   const { search, status } = request.query;
   const entries = await prisma.journalEntry.findMany({
     where: { ...(status && status !== 'ALL' ? { status } : {}), ...(search ? { OR: [{ reference: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] } : {}) },
-    include: { journal: true, items: { include: { account: true } } },
+    include: { journal: true, items: { include: { account: true, partner: true } } },
     orderBy: { date: 'desc' }
   });
   response.json({ success: true, data: entries.map(publicEntry) });
 }
 
 export async function getJournalEntry(request, response) {
-  const entry = await prisma.journalEntry.findUnique({ where: { id: request.params.id }, include: { journal: true, items: { include: { account: true } } } });
+  const entry = await prisma.journalEntry.findUnique({ where: { id: request.params.id }, include: { journal: true, items: { include: { account: true, partner: true } } } });
   if (!entry) return response.status(404).json({ success: false, message: 'Journal entry not found.' });
   response.json({ success: true, data: publicEntry(entry) });
 }
