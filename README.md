@@ -1,7 +1,5 @@
 # Urban Furniture - Accounting System
 
-A 24-hour hackathon foundation for a furniture-business accounting platform. This repository intentionally contains the scalable project structure, initial dashboard UI, authentication architecture, API boundaries, and Prisma data model. Detailed transaction and accounting behavior is reserved for the implementation phase.
-
 ## Stack
 
 - Client: React, Vite, JavaScript, Tailwind CSS, React Router, Axios, Recharts, Lucide React
