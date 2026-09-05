@@ -136,8 +136,9 @@ model Contact {
   purchaseOrders PurchaseOrder[]
   vendorBills    VendorBill[]
 
-  customerPayments Payment[] @relation("CustomerPayments")
-  vendorPayments   Payment[] @relation("VendorPayments")
+  customerPayments Payment[]     @relation("CustomerPayments")
+  vendorPayments   Payment[]     @relation("VendorPayments")
+  journalItems     JournalItem[]
 
   @@index([name])
   @@index([type])
@@ -332,15 +333,18 @@ model JournalItem {
   credit Decimal @default(0) @db.Decimal(12, 2)
 
   analyticAccountId String?
+  partnerId         String?
 
   journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   account      Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
 
   analyticAccount AnalyticAccount? @relation(fields: [analyticAccountId], references: [id], onDelete: SetNull)
+  partner         Contact?         @relation(fields: [partnerId], references: [id], onDelete: SetNull)
 
   @@index([journalEntryId])
   @@index([accountId])
   @@index([analyticAccountId])
+  @@index([partnerId])
 }
 
 // ============================================================
