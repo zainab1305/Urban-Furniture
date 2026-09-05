@@ -22,6 +22,7 @@
     "express": "latest",
     "jsonwebtoken": "latest",
     "morgan": "latest",
+    "multer": "^2.3.0",
     "zod": "latest"
   },
   "devDependencies": {

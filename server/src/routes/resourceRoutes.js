@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { contactImageUpload } from '../middleware/contactUpload.js';
 import { archiveAccount, archiveContact, archiveProduct, createAccount, createContact, createProduct, listAccounts, listContacts, listProducts, updateAccount, updateContact, updateProduct } from '../controllers/resourceController.js';
 
 const resources = ['contacts', 'products', 'accounts', 'journals', 'analytic-accounts', 'budgets', 'sales', 'purchases', 'payments', 'journal-entries', 'reports'];
 export const resourceRoutes = Router();
 resourceRoutes.use(authenticate);
 resourceRoutes.get('/contacts', listContacts);
-resourceRoutes.post('/contacts', createContact);
-resourceRoutes.patch('/contacts/:id', updateContact);
+resourceRoutes.post('/contacts', contactImageUpload.single('profileImage'), createContact);
+resourceRoutes.patch('/contacts/:id', contactImageUpload.single('profileImage'), updateContact);
 resourceRoutes.delete('/contacts/:id', archiveContact);
 resourceRoutes.get('/products', listProducts);
 resourceRoutes.post('/products', createProduct);

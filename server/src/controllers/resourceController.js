@@ -9,15 +9,15 @@ export async function listContacts(request, response) {
 }
 
 export async function createContact(request, response) {
-  const { name, type, email, mobile, address, city, state, pincode } = request.body;
+  const { name, type, email, mobile, address, city, state, pincode } = request.body || {};
   if (!name?.trim() || !['CUSTOMER', 'VENDOR', 'BOTH'].includes(type)) return response.status(400).json({ success: false, message: 'Name and contact type are required.' });
-  const contact = await prisma.contact.create({ data: { name: name.trim(), type, email: email?.trim() || null, mobile: mobile?.trim() || null, address: address?.trim() || null, city: city?.trim() || null, state: state?.trim() || null, pincode: pincode?.trim() || null } });
+  const contact = await prisma.contact.create({ data: { name: name.trim(), type, email: email?.trim() || null, mobile: mobile?.trim() || null, address: address?.trim() || null, city: city?.trim() || null, state: state?.trim() || null, pincode: pincode?.trim() || null, profileImage: request.file ? `/uploads/contacts/${request.file.filename}` : null } });
   response.status(201).json({ success: true, data: contact });
 }
 
 export async function updateContact(request, response) {
-  const { name, type, email, mobile, address, city, state, pincode, isActive } = request.body;
-  const contact = await prisma.contact.update({ where: { id: request.params.id }, data: { ...(name !== undefined ? { name: name.trim() } : {}), ...(type ? { type } : {}), ...(email !== undefined ? { email: email?.trim() || null } : {}), ...(mobile !== undefined ? { mobile: mobile?.trim() || null } : {}), ...(address !== undefined ? { address: address?.trim() || null } : {}), ...(city !== undefined ? { city: city?.trim() || null } : {}), ...(state !== undefined ? { state: state?.trim() || null } : {}), ...(pincode !== undefined ? { pincode: pincode?.trim() || null } : {}), ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}) } });
+  const { name, type, email, mobile, address, city, state, pincode, isActive } = request.body || {};
+  const contact = await prisma.contact.update({ where: { id: request.params.id }, data: { ...(name !== undefined ? { name: name.trim() } : {}), ...(type ? { type } : {}), ...(email !== undefined ? { email: email?.trim() || null } : {}), ...(mobile !== undefined ? { mobile: mobile?.trim() || null } : {}), ...(address !== undefined ? { address: address?.trim() || null } : {}), ...(city !== undefined ? { city: city?.trim() || null } : {}), ...(state !== undefined ? { state: state?.trim() || null } : {}), ...(pincode !== undefined ? { pincode: pincode?.trim() || null } : {}), ...(request.file ? { profileImage: `/uploads/contacts/${request.file.filename}` } : {}), ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}) } });
   response.json({ success: true, data: contact });
 }
 
