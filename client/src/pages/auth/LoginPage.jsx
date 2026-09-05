@@ -35,8 +35,14 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       // Step 3 & 4: Authenticate with PostgreSQL User table via Prisma
-      await login(loginId.trim(), password);
-      const redirectPath = location.state?.from?.pathname || '/dashboard';
+      const response = await login(loginId.trim(), password);
+      const loggedInUser = response?.data?.user;
+      const roleHome = loggedInUser?.role === 'ADMIN'
+        ? '/admin/dashboard'
+        : loggedInUser?.role === 'CONTACT'
+        ? '/dashboard'
+        : '/dashboard';
+      const redirectPath = location.state?.from?.pathname || roleHome;
       navigate(redirectPath, { replace: true });
     } catch (error) {
       const serverMessage = error.response?.data?.message;

@@ -11,7 +11,8 @@ const tokenFor = user =>
       loginId: user.loginId,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      contactId: user.contactId
     },
     env.jwtSecret,
     { expiresIn: '1d' }
@@ -24,6 +25,7 @@ const publicUser = user => ({
   email: user.email,
   role: user.role,
   isActive: user.isActive,
+  contactId: user.contactId,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt
 });
@@ -229,9 +231,7 @@ export async function logout(_request, response) {
 
 export async function session(request, response) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: request.user.id }
-    });
+    const user = await prisma.user.findUnique({ where: { id: request.user.id } });
 
     if (!user) {
       return response.status(401).json({ success: false, message: 'Session expired' });

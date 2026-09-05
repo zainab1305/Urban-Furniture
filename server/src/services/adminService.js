@@ -30,7 +30,7 @@ export async function listUsers({ search, role, status }) {
 
 export async function createUser(input) {
   const passwordHash = await bcrypt.hash(input.password, 12);
-  const user = await prisma.user.create({ data: { name: input.name.trim(), loginId: input.loginId.trim(), email: input.email.trim().toLowerCase(), role: input.role, passwordHash, isActive: true } });
+  const user = await prisma.user.create({ data: { name: input.name.trim(), loginId: input.loginId.trim(), email: input.email.trim().toLowerCase(), role: input.role, passwordHash, isActive: true, contactId: input.contactId || null } });
   return publicUser(user);
 }
 

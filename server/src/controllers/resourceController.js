@@ -1,4 +1,5 @@
 import { prisma } from '../config/db.js';
+import bcrypt from 'bcrypt';
 
 const parseNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
@@ -9,9 +10,18 @@ export async function listContacts(request, response) {
 }
 
 export async function createContact(request, response) {
-  const { name, type, email, mobile, address, city, state, pincode } = request.body || {};
+  const { name, type, email, mobile, address, city, state, pincode, createPortalUser, loginId, password, confirmPassword } = request.body || {};
+  const shouldCreatePortalUser = createPortalUser === true || createPortalUser === 'true';
   if (!name?.trim() || !['CUSTOMER', 'VENDOR', 'BOTH'].includes(type)) return response.status(400).json({ success: false, message: 'Name and contact type are required.' });
-  const contact = await prisma.contact.create({ data: { name: name.trim(), type, email: email?.trim() || null, mobile: mobile?.trim() || null, address: address?.trim() || null, city: city?.trim() || null, state: state?.trim() || null, pincode: pincode?.trim() || null, profileImage: request.file ? `/uploads/contacts/${request.file.filename}` : null } });
+  if (shouldCreatePortalUser && (!email?.trim() || !loginId || !password || password !== confirmPassword)) return response.status(400).json({ success: false, message: 'Email, portal Login ID and matching password are required.' });
+  const contact = await prisma.$transaction(async transaction => {
+    const created = await transaction.contact.create({ data: { name: name.trim(), type, email: email?.trim() || null, mobile: mobile?.trim() || null, address: address?.trim() || null, city: city?.trim() || null, state: state?.trim() || null, pincode: pincode?.trim() || null, profileImage: request.file ? `/uploads/contacts/${request.file.filename}` : null } });
+    if (shouldCreatePortalUser) {
+      const passwordHash = await bcrypt.hash(password, 12);
+      await transaction.user.create({ data: { loginId: loginId.trim(), name: name.trim(), email: email.trim().toLowerCase(), passwordHash, role: 'CONTACT', contactId: created.id } });
+    }
+    return created;
+  });
   response.status(201).json({ success: true, data: contact });
 }
 

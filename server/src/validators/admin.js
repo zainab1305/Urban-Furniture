@@ -6,6 +6,7 @@ export const adminUserSchema = z.object({
   loginId: z.string().trim().regex(loginIdRegex, 'Login ID must be 6-12 letters, numbers, or underscores.'),
   email: z.string().trim().email('Enter a valid email address.'),
   role: z.enum(['ADMIN', 'ACCOUNTANT', 'CONTACT']),
+  contactId: z.string().cuid().optional(),
   password: z.string().regex(passwordRegex, 'Password must be more than 8 characters with lowercase, uppercase, and special character.'),
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });

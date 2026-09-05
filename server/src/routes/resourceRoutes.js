@@ -7,6 +7,7 @@ import { archiveJournal, createJournal, createJournalEntry, getJournalEntry, lis
 const resources = ['contacts', 'products', 'accounts', 'journals', 'analytic-accounts', 'budgets', 'sales', 'purchases', 'payments', 'journal-entries', 'reports'];
 export const resourceRoutes = Router();
 resourceRoutes.use(authenticate);
+resourceRoutes.use(['/contacts', '/products'], authorize('ADMIN', 'ACCOUNTANT'));
 resourceRoutes.get('/contacts', listContacts);
 resourceRoutes.post('/contacts', contactImageUpload.single('profileImage'), createContact);
 resourceRoutes.patch('/contacts/:id', contactImageUpload.single('profileImage'), updateContact);
@@ -29,4 +30,5 @@ resourceRoutes.get('/journal-entries', listJournalEntries);
 resourceRoutes.get('/journal-entries/:id', getJournalEntry);
 resourceRoutes.post('/journal-entries', createJournalEntry);
 resourceRoutes.post('/journal-entries/:id/post', postJournalEntry);
+resourceRoutes.use(['/analytic-accounts', '/budgets', '/sales', '/purchases', '/payments', '/reports'], authorize('ADMIN', 'ACCOUNTANT'));
 resources.filter(resource => !['contacts', 'products', 'accounts', 'journals', 'journal-entries'].includes(resource)).forEach(resource => resourceRoutes.get(`/${resource}`, (_request, response) => response.json({ success: true, data: [], message: `${resource} module placeholder` })));

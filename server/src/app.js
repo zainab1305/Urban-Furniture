@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { authRoutes } from './routes/authRoutes.js';
 import { resourceRoutes } from './routes/resourceRoutes.js';
 import { adminRoutes } from './routes/adminRoutes.js';
+import { portalRoutes } from './routes/portalRoutes.js';
 
 export const app = express();
 const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,5 +25,6 @@ app.get('/api/health', (_request, response) =>
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/portal', portalRoutes);
 app.use('/api', resourceRoutes);
 app.use(errorHandler);

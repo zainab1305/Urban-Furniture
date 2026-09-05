@@ -4,7 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout.jsx';
 import { LoginPage } from '../pages/auth/LoginPage.jsx';
 import { SignupPage } from '../pages/auth/SignupPage.jsx';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage.jsx';
-import { DashboardPage } from '../pages/dashboard/DashboardPage.jsx';
+import { RoleDashboardPage } from '../pages/RoleDashboardPage.jsx';
 import { PlaceholderPage } from '../pages/PlaceholderPage.jsx';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.jsx';
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage.jsx';
@@ -14,6 +14,8 @@ import { MasterDataPage } from '../pages/MasterDataPage.jsx';
 import { AccountsPage } from '../pages/accounts/AccountsPage.jsx';
 import { JournalsPage } from '../pages/journals/JournalsPage.jsx';
 import { JournalEntriesPage } from '../pages/journal-entries/JournalEntriesPage.jsx';
+import { PortalRecordsPage } from '../pages/portal/PortalRecordsPage.jsx';
+import { PortalPaymentsPage } from '../pages/portal/PortalPaymentsPage.jsx';
 
 const routes = [
   ['/accounts', 'Chart of Accounts', 'Organize the financial structure for reporting.'],
@@ -122,25 +124,24 @@ export function AppRoutes() {
       {/* Protected ERP routes (authenticated users only) */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/contacts" element={<MasterDataPage kind="contacts" />} />
-          <Route path="/products" element={<MasterDataPage kind="products" />} />
+          <Route path="/dashboard" element={<RoleDashboardPage />} />
           <Route element={<AccountingOnlyRoute />}>
+            <Route path="/contacts" element={<MasterDataPage kind="contacts" />} />
+            <Route path="/products" element={<MasterDataPage kind="products" />} />
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/journals" element={<JournalsPage />} />
             <Route path="/journal-entries" element={<JournalEntriesPage />} />
           </Route>
+          <Route path="/portal/invoices" element={<PortalOnlyRoute><PortalRecordsPage kind="invoices" /></PortalOnlyRoute>} />
+          <Route path="/portal/bills" element={<PortalOnlyRoute><PortalRecordsPage kind="bills" /></PortalOnlyRoute>} />
+          <Route path="/portal/payments" element={<PortalOnlyRoute><PortalPaymentsPage /></PortalOnlyRoute>} />
           <Route element={<AdminOnlyRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
-          {routes.map(([path, title, description]) => (
-            <Route
-              key={path}
-              path={path}
-              element={<PlaceholderPage title={title} description={description} />}
-            />
-          ))}
+          <Route element={<AccountingOnlyRoute />}>
+            {routes.map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
+          </Route>
         </Route>
       </Route>
 
@@ -148,4 +149,9 @@ export function AppRoutes() {
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
+}
+
+function PortalOnlyRoute({ children }) {
+  const { user } = useAuth();
+  return user?.role === 'CONTACT' ? children : <Navigate to="/dashboard" replace />;
 }

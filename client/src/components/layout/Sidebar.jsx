@@ -69,6 +69,8 @@ export function Sidebar() {
       : 'Contact Workspace';
 
   const adminGroups = user?.role === 'ADMIN' ? [{ label: 'Administration', items: [['/admin/dashboard', 'Admin Dashboard', LayoutDashboard], ['/admin/users', 'User Management', Users]] }] : [];
+  const portalGroups = user?.role === 'CONTACT' ? [{ label: 'My portal', items: [['/dashboard', 'My Dashboard', LayoutDashboard], ['/portal/invoices', 'My Invoices', FileText], ['/portal/bills', 'My Bills', Receipt], ['/portal/payments', 'My Payments', WalletCards]] }] : [];
+  const visibleGroups = user?.role === 'CONTACT' ? portalGroups : [...adminGroups, ...groups];
 
   return (
     <aside className="sidebar">
@@ -81,7 +83,7 @@ export function Sidebar() {
       </div>
       <div className="workspace-label">ACCOUNTING WORKSPACE</div>
       <nav>
-        {[...adminGroups, ...groups].map(group => (
+        {visibleGroups.map(group => (
           <section className="nav-group" key={group.label}>
             <div className="nav-label">{group.label}</div>
             {group.items.map(([to, label, Icon]) => (
