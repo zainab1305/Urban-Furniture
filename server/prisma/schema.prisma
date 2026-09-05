@@ -293,6 +293,7 @@ model Budget {
   isReverted Boolean @default(false)
 
   responsiblePerson String?
+  revisedWith       String?
 
 
   analyticAccountId String
