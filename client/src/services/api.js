@@ -2,6 +2,14 @@ import axios from 'axios';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
 const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : '/api';
+const apiOrigin = configuredApiUrl || `${window.location.protocol}//${window.location.hostname}:5000`;
+
+export function getAssetUrl(assetPath) {
+  if (!assetPath || assetPath.startsWith('data:') || assetPath.startsWith('blob:') || /^https?:\/\//i.test(assetPath)) {
+    return assetPath;
+  }
+  return `${apiOrigin}${assetPath.startsWith('/') ? assetPath : `/${assetPath}`}`;
+}
 
 export const api = axios.create({
   baseURL: apiBaseUrl,
