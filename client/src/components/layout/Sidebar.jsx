@@ -69,7 +69,7 @@ export function Sidebar() {
       : 'Contact Workspace';
 
   const adminGroups = user?.role === 'ADMIN' ? [{ label: 'Administration', items: [['/admin/dashboard', 'Admin Dashboard', LayoutDashboard], ['/admin/users', 'User Management', Users]] }] : [];
-  const portalGroups = user?.role === 'CONTACT' ? [{ label: 'My portal', items: [['/dashboard', 'My Dashboard', LayoutDashboard], ['/portal/invoices', 'My Invoices', FileText], ['/portal/bills', 'My Bills', Receipt], ['/portal/payments', 'My Payments', WalletCards]] }] : [];
+  const portalGroups = user?.role === 'CONTACT' ? [{ label: 'My portal', items: [['/dashboard', 'My Dashboard', LayoutDashboard], ['/portal/invoices', 'My Invoices', FileText], ['/portal/payments', 'My Payments', WalletCards]] }] : [];
   const visibleGroups = user?.role === 'CONTACT' ? portalGroups : [...adminGroups, ...groups];
 
   return (
