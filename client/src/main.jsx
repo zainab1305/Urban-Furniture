@@ -9,6 +9,7 @@ import './journals.css';
 import './purchases.css';
 import './payments.css';
 import './planning.css';
+import './portal.css';
 import './sales.css';
 
 createRoot(document.getElementById('root')).render(

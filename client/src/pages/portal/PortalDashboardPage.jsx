@@ -1,15 +1,31 @@
 import { useEffect, useState } from 'react';
+import { CreditCard, FileText, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CreditCard, FileText, Receipt, RefreshCw } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader.jsx';
 import { api } from '../../services/api.js';
 
 const money = value => `₹${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 export function PortalDashboardPage() {
-  const [data, setData] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
-  const load = async () => { setLoading(true); setError(''); try { const response = await api.get('/portal/dashboard'); setData(response.data.data); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to load your portal.'); } finally { setLoading(false); } };
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = async () => {
+    setLoading(true); setError('');
+    try { const response = await api.get('/portal/dashboard'); setData(response.data.data); }
+    catch (requestError) { setError(requestError.response?.data?.message || 'Unable to load your portal.'); }
+    finally { setLoading(false); }
+  };
   useEffect(() => { load(); }, []);
-  const invoices = data?.invoices || []; const bills = data?.bills || [];
-  return <><PageHeader eyebrow="MY PORTAL / DASHBOARD" title="My financial activity" description="View your invoices, bills, payments and outstanding dues." action={<button className="secondary-button" onClick={load} disabled={loading}><RefreshCw size={15} /> Refresh</button>} />{error && <div className="auth-alert error">{error}</div>}{loading ? <section className="surface empty-table">Loading your records...</section> : <><div className="stat-grid portal-stat-grid"><article className="stat-card"><span className="stat-label">My invoices</span><strong>{invoices.length}</strong><small>Customer invoices</small></article><article className="stat-card"><span className="stat-label">My bills</span><strong>{bills.length}</strong><small>Vendor bills</small></article><article className="stat-card"><span className="stat-label">Invoice dues</span><strong>{money(invoices.reduce((sum, item) => sum + item.outstanding, 0))}</strong><small>Outstanding</small></article><article className="stat-card"><span className="stat-label">Bill dues</span><strong>{money(bills.reduce((sum, item) => sum + item.outstanding, 0))}</strong><small>Outstanding</small></article></div><div className="portal-grid"><section className="surface portal-list"><div className="section-heading"><div><div className="eyebrow">MY INVOICES</div><h2>Invoices</h2></div><Link to="/portal/invoices">View all</Link></div>{invoices.length ? invoices.slice(0, 5).map(invoice => <div className="portal-row" key={invoice.id}><FileText size={16} /><div><b>{invoice.invoiceNumber}</b><small>{new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}</small></div><strong>{money(invoice.outstanding)}</strong><span className={`status-pill ${invoice.outstanding ? 'inactive' : 'active'}`}><i />{invoice.outstanding ? 'Unpaid' : 'Paid'}</span></div>) : <div className="empty-table">No invoices found.</div>}</section><section className="surface portal-list"><div className="section-heading"><div><div className="eyebrow">MY BILLS</div><h2>Bills</h2></div><Link to="/portal/bills">View all</Link></div>{bills.length ? bills.slice(0, 5).map(bill => <div className="portal-row" key={bill.id}><Receipt size={16} /><div><b>{bill.billNumber}</b><small>{new Date(bill.invoiceDate).toLocaleDateString('en-IN')}</small></div><strong>{money(bill.outstanding)}</strong><span className={`status-pill ${bill.outstanding ? 'inactive' : 'active'}`}><i />{bill.outstanding ? 'Unpaid' : 'Paid'}</span></div>) : <div className="empty-table">No bills found.</div>}</section></div><Link className="portal-pay-card" to="/portal/payments"><CreditCard size={18} /><span><b>Make a payment</b><small>Pay an outstanding invoice or bill</small></span><strong>→</strong></Link></>}</>;
+  const invoices = data?.invoices || [];
+  const invoiceDues = invoices.reduce((sum, invoice) => sum + invoice.outstanding, 0);
+  return <>
+    <PageHeader eyebrow="MY PORTAL / DASHBOARD" title="My financial activity" description="View your invoices, payments and outstanding dues." action={<button className="secondary-button" onClick={load} disabled={loading}><RefreshCw size={15} /> Refresh</button>} />
+    {error && <div className="auth-alert error">{error}</div>}
+    {loading ? <section className="surface empty-table">Loading your records...</section> : <div className="portal-dashboard-body">
+      <div className="stat-grid portal-stat-grid"><article className="stat-card"><span className="stat-label">My invoices</span><strong>{invoices.length}</strong><small>Customer invoices</small></article><article className="stat-card"><span className="stat-label">Invoice dues</span><strong>{money(invoiceDues)}</strong><small>Outstanding</small></article></div>
+      <div className="portal-grid portal-single-grid"><section className="surface portal-list"><div className="section-heading"><div><div className="eyebrow">MY INVOICES</div><h2>Invoices</h2></div><Link to="/portal/invoices">View all</Link></div>{invoices.length ? invoices.slice(0, 5).map(invoice => <div className="portal-row" key={invoice.id}><FileText size={16} /><div><b>{invoice.invoiceNumber}</b><small>{new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}</small></div><strong>{money(invoice.outstanding)}</strong><span className={`status-pill ${invoice.outstanding ? 'inactive' : 'active'}`}><i />{invoice.outstanding ? 'Unpaid' : 'Paid'}</span></div>) : <div className="empty-table">No invoices found.</div>}</section></div>
+      <Link className="portal-pay-card" to="/portal/payments"><CreditCard size={18} /><span><b>Make a payment</b><small>Pay an outstanding invoice</small></span><strong>→</strong></Link>
+    </div>}
+  </>;
 }
