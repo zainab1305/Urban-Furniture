@@ -45,7 +45,11 @@ export async function listVendorBills(_request, response) {
 }
 
 export async function createVendorBill(request, response) {
-  const { purchaseOrderId, invoiceDate, dueDate, notes } = request.body;
+  const { invoiceDate, dueDate, notes } = request.body;
+  const purchaseOrderId = request.params.id || request.body.purchaseOrderId;
+  if (!purchaseOrderId) {
+    return response.status(400).json({ success: false, message: 'Purchase order ID is required to create a vendor bill.' });
+  }
   const bill = await prisma.$transaction(async transaction => {
     const order = await transaction.purchaseOrder.findUnique({ where: { id: purchaseOrderId }, include: { bill: true, items: true } });
     if (!order) throw Object.assign(new Error('Purchase order not found.'), { statusCode: 404 });
