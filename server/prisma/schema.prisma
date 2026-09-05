@@ -644,3 +644,4 @@ model StockMovement {
   @@index([type])
   @@index([date])
 }
+  
