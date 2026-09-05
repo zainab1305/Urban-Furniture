@@ -293,7 +293,7 @@ model Budget {
   isReverted Boolean @default(false)
 
   responsiblePerson String?
-  revisedWith       String?
+
 
   analyticAccountId String
   analyticAccount   AnalyticAccount @relation(fields: [analyticAccountId], references: [id], onDelete: Restrict)
