@@ -1,0 +1,24 @@
+import { useEffect, useState } from 'react';
+import { Archive, Edit3, Plus, Search, X } from 'lucide-react';
+import { PageHeader } from '../../components/ui/PageHeader.jsx';
+import { api } from '../../services/api.js';
+
+const types = { INCOME: 'Income', EXPENSE: 'Expenses' };
+const emptyForm = { name: '', type: 'EXPENSE' };
+
+export function AnalyticAccountsPage() {
+  const [accounts, setAccounts] = useState([]);
+  const [form, setForm] = useState(emptyForm);
+  const [modal, setModal] = useState(null);
+  const [filters, setFilters] = useState({ search: '', type: 'ALL' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const load = async () => { setLoading(true); try { const response = await api.get('/analytic-accounts', { params: filters }); setAccounts(response.data.data); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to load analytic accounts.'); } finally { setLoading(false); } };
+  useEffect(() => { const timer = setTimeout(load, 200); return () => clearTimeout(timer); }, [filters.search, filters.type]);
+  const open = account => { setModal(account ? { type: 'edit', account } : { type: 'create' }); setForm(account ? { name: account.name, type: account.type } : emptyForm); setError(''); };
+  const save = async event => { event.preventDefault(); setError(''); try { if (modal.type === 'create') await api.post('/analytic-accounts', form); else await api.patch(`/analytic-accounts/${modal.account.id}`, form); setModal(null); setNotice('Analytic account saved successfully.'); await load(); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to save analytic account.'); } };
+  const remove = async account => { if (!window.confirm(`Delete ${account.name}?`)) return; try { await api.delete(`/analytic-accounts/${account.id}`); setNotice('Analytic account deleted.'); await load(); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to delete analytic account.'); } };
+  return <><PageHeader eyebrow="MASTER DATA / ANALYTIC ACCOUNTS" title="Analytic accounts" description="Group income and expenses by project, department or business unit." action={<button className="primary-button" onClick={() => open()}><Plus size={16} /> New analytic account</button>} />{notice && <div className="auth-alert success">{notice}<button onClick={() => setNotice('')}><X size={14} /></button></div>}{error && <div className="auth-alert error">{error}</div>}<section className="surface users-card"><div className="admin-toolbar"><label className="table-search"><Search size={15} /><input value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value })} placeholder="Search analytic accounts" /></label><select value={filters.type} onChange={event => setFilters({ ...filters, type: event.target.value })}><option value="ALL">All types</option>{Object.entries(types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>{loading ? <div className="empty-table">Loading analytic accounts...</div> : !accounts.length ? <div className="empty-table">No analytic accounts found.</div> : <div className="table-wrap"><table><thead><tr><th>ANALYTIC ACCOUNT</th><th>TYPE</th><th>BUDGETS</th><th>ACTIONS</th></tr></thead><tbody>{accounts.map(account => <tr key={account.id}><td><b>{account.name}</b></td><td><span className="role-pill">{types[account.type]}</span></td><td>{account._count?.budgets || 0}</td><td><div className="user-actions"><button title="Edit" onClick={() => open(account)}><Edit3 size={14} /></button><button title="Delete" onClick={() => remove(account)}><Archive size={14} /></button></div></td></tr>)}</tbody></table></div>}</section>{modal && <div className="modal-backdrop"><section className="modal account-modal" role="dialog" aria-modal="true"><button className="modal-close" onClick={() => setModal(null)} aria-label="Close"><X size={17} /></button><div className="eyebrow">ANALYTIC ACCOUNT</div><h2>{modal.type === 'create' ? 'New analytic account' : 'Edit analytic account'}</h2><p>Choose the financial direction for this marker.</p><form onSubmit={save}><label>Analytic Account Name<input value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} required /></label><label>Type<select value={form.type} onChange={event => setForm({ ...form, type: event.target.value })}>{Object.entries(types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(null)}>Cancel</button><button className="primary-button">Save account</button></div></form></section></div>}</>;
+}

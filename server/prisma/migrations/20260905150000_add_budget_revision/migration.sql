@@ -1,0 +1,1 @@
+ALTER TABLE "Budget" ADD COLUMN IF NOT EXISTS "revisedWith" TEXT;

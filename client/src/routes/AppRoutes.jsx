@@ -14,6 +14,9 @@ import { MasterDataPage } from '../pages/MasterDataPage.jsx';
 import { AccountsPage } from '../pages/accounts/AccountsPage.jsx';
 import { JournalsPage } from '../pages/journals/JournalsPage.jsx';
 import { JournalEntriesPage } from '../pages/journal-entries/JournalEntriesPage.jsx';
+import { AnalyticAccountsPage } from '../pages/analytic-accounts/AnalyticAccountsPage.jsx';
+import { BudgetsPage } from '../pages/budgets/BudgetsPage.jsx';
+import { BudgetReportPage } from '../pages/reports/BudgetReportPage.jsx';
 import { PortalRecordsPage } from '../pages/portal/PortalRecordsPage.jsx';
 import { PortalPaymentsPage } from '../pages/portal/PortalPaymentsPage.jsx';
 
@@ -131,6 +134,9 @@ export function AppRoutes() {
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/journals" element={<JournalsPage />} />
             <Route path="/journal-entries" element={<JournalEntriesPage />} />
+            <Route path="/analytic-accounts" element={<AnalyticAccountsPage />} />
+            <Route path="/budgets" element={<BudgetsPage />} />
+            <Route path="/reports/budget" element={<BudgetReportPage />} />
           </Route>
           <Route path="/portal/invoices" element={<PortalOnlyRoute><PortalRecordsPage kind="invoices" /></PortalOnlyRoute>} />
           <Route path="/portal/bills" element={<PortalOnlyRoute><PortalRecordsPage kind="bills" /></PortalOnlyRoute>} />
@@ -140,7 +146,7 @@ export function AppRoutes() {
             <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
           <Route element={<AccountingOnlyRoute />}>
-            {routes.map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
+            {routes.filter(([path]) => !['/analytic-accounts', '/budgets', '/reports/budget'].includes(path)).map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
           </Route>
         </Route>
       </Route>

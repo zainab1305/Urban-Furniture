@@ -56,6 +56,13 @@ enum AnalyticType {
   EXPENSE
 }
 
+enum BudgetStatus {
+  DRAFT
+  CONFIRMED
+  REVISED
+  CANCELLED
+}
+
 enum DocumentStatus {
   DRAFT
   CONFIRMED
@@ -282,9 +289,11 @@ model Budget {
 
   amount Decimal @db.Decimal(12, 2)
 
+  status BudgetStatus @default(DRAFT)
   isReverted Boolean @default(false)
 
   responsiblePerson String?
+  revisedWith       String?
 
   analyticAccountId String
   analyticAccount   AnalyticAccount @relation(fields: [analyticAccountId], references: [id], onDelete: Restrict)
