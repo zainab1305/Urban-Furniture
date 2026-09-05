@@ -33,6 +33,19 @@ api.interceptors.request.use(config => {
   return config;
 });
 
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
+      sessionStorage.removeItem('uf_auth_token');
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export async function loginApi({ loginId, password }) {
   const response = await api.post('/auth/login', { loginId, password });
   if (response.data?.data?.token) {

@@ -19,6 +19,7 @@ import { BudgetsPage } from '../pages/budgets/BudgetsPage.jsx';
 import { BudgetReportPage } from '../pages/reports/BudgetReportPage.jsx';
 import { PortalRecordsPage } from '../pages/portal/PortalRecordsPage.jsx';
 import { PortalPaymentsPage } from '../pages/portal/PortalPaymentsPage.jsx';
+import { PurchasesPage } from '../pages/purchases/PurchasesPage.jsx';
 
 const routes = [
   ['/accounts', 'Chart of Accounts', 'Organize the financial structure for reporting.'],
@@ -27,9 +28,6 @@ const routes = [
   ['/sales', 'Sales', 'Prepare the sales workflow foundation.'],
   ['/sales/orders', 'Sales Orders', 'Sales order workspace placeholder.'],
   ['/sales/invoices', 'Sales Invoices', 'Customer invoice workspace placeholder.'],
-  ['/purchases', 'Purchases', 'Prepare the purchase workflow foundation.'],
-  ['/purchases/orders', 'Purchase Orders', 'Purchase order workspace placeholder.'],
-  ['/purchases/bills', 'Vendor Bills', 'Vendor bill workspace placeholder.'],
   ['/payments', 'Payments', 'Record incoming and outgoing payments.'],
   ['/reports/profit-loss', 'Profit & Loss', 'Review revenue and expense reporting.'],
   ['/reports/balance-sheet', 'Balance Sheet', 'Review assets, liabilities and capital.'],
@@ -137,6 +135,9 @@ export function AppRoutes() {
             <Route path="/analytic-accounts" element={<AnalyticAccountsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/reports/budget" element={<BudgetReportPage />} />
+            <Route path="/purchases" element={<PurchasesPage />} />
+            <Route path="/purchases/orders" element={<PurchasesPage section="orders" />} />
+            <Route path="/purchases/bills" element={<PurchasesPage section="bills" />} />
           </Route>
           <Route path="/portal/invoices" element={<PortalOnlyRoute><PortalRecordsPage kind="invoices" /></PortalOnlyRoute>} />
           <Route path="/portal/bills" element={<PortalOnlyRoute><PortalRecordsPage kind="bills" /></PortalOnlyRoute>} />

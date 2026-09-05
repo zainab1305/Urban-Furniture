@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import './index.css';
 import './admin.css';
 import './journals.css';
+import './purchases.css';
 import './planning.css';
 
 createRoot(document.getElementById('root')).render(
