@@ -67,14 +67,14 @@ export async function listJournalEntries(request, response) {
   const { search, status } = request.query;
   const entries = await prisma.journalEntry.findMany({
     where: { ...(status && status !== 'ALL' ? { status } : {}), ...(search ? { OR: [{ reference: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] } : {}) },
-    include: { journal: true, items: { include: { account: true, partner: true } } },
+    include: { journal: true, items: { include: { account: true, partner: true, analyticAccount: true } } },
     orderBy: { date: 'desc' }
   });
   response.json({ success: true, data: entries.map(publicEntry) });
 }
 
 export async function getJournalEntry(request, response) {
-  const entry = await prisma.journalEntry.findUnique({ where: { id: request.params.id }, include: { journal: true, items: { include: { account: true, partner: true } } } });
+  const entry = await prisma.journalEntry.findUnique({ where: { id: request.params.id }, include: { journal: true, items: { include: { account: true, partner: true, analyticAccount: true } } } });
   if (!entry) return response.status(404).json({ success: false, message: 'Journal entry not found.' });
   response.json({ success: true, data: publicEntry(entry) });
 }
@@ -88,10 +88,37 @@ export async function createJournalEntry(request, response) {
   const entry = await prisma.$transaction(async transaction => {
     const journal = await transaction.journal.findUnique({ where: { id: journalId } });
     if (!journal) throw Object.assign(new Error('Journal not found.'), { statusCode: 400 });
-    const accountIds = [...new Set(items.map(item => item.accountId))];
-    const activeAccounts = await transaction.account.count({ where: { id: { in: accountIds }, isActive: true } });
-    if (activeAccounts !== accountIds.length) throw Object.assign(new Error('Every journal item must use an active account.'), { statusCode: 400 });
-    return transaction.journalEntry.create({ data: { date: new Date(date), journalId, reference: reference?.trim() || null, description: description?.trim() || null, status, createdById: request.user.id, items: { create: items.map(item => ({ accountId: item.accountId, debit: numberValue(item.debit), credit: numberValue(item.credit) })) } }, include: { journal: true, items: { include: { account: true } } } });
+      const accountIds = [...new Set(items.map(item => item.accountId))];
+      const activeAccounts = await transaction.account.findMany({ where: { id: { in: accountIds }, isActive: true }, select: { id: true, type: true } });
+      if (activeAccounts.length !== accountIds.length) throw Object.assign(new Error('Every journal item must use an active account.'), { statusCode: 400 });
+      const accountTypes = new Map(activeAccounts.map(account => [account.id, account.type]));
+      const analyticAccounts = await transaction.analyticAccount.findMany({ where: { type: { in: ['INCOME', 'EXPENSE'] } }, orderBy: { name: 'asc' }, select: { id: true, type: true } });
+      const defaultAnalyticAccount = type => analyticAccounts.find(account => account.type === type)?.id || null;
+    const analyticAccountIds = [...new Set(items.map(item => item.analyticAccountId).filter(Boolean))];
+    if (analyticAccountIds.length) {
+      const activeAnalyticAccounts = await transaction.analyticAccount.count({ where: { id: { in: analyticAccountIds } } });
+      if (activeAnalyticAccounts !== analyticAccountIds.length) throw Object.assign(new Error('Every analytic account must be valid.'), { statusCode: 400 });
+    }
+      return transaction.journalEntry.create({
+        data: {
+          date: new Date(date),
+          journalId,
+          reference: reference?.trim() || null,
+          description: description?.trim() || null,
+          status,
+          createdById: request.user.id,
+          items: {
+            create: items.map(item => ({
+              accountId: item.accountId,
+              analyticAccountId: item.analyticAccountId || defaultAnalyticAccount(accountTypes.get(item.accountId)),
+              partnerId: item.partnerId || null,
+              debit: numberValue(item.debit),
+              credit: numberValue(item.credit)
+            }))
+          }
+        },
+        include: { journal: true, items: { include: { account: true, analyticAccount: true } } }
+      });
   });
   response.status(201).json({ success: true, data: publicEntry(entry) });
 }

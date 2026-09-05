@@ -26,11 +26,20 @@ async function resolveJournal(transaction, type) {
   });
 }
 
+async function resolveAnalyticAccount(transaction, account) {
+  if (!['INCOME', 'EXPENSE'].includes(account.type)) return null;
+  return transaction.analyticAccount.findFirst({ where: { type: account.type } });
+}
+
 async function createBalancedEntry(transaction, { journalType, reference, description, partnerId, debit, credit, amount, createdById }) {
   const [journal, debitAccount, creditAccount] = await Promise.all([
     resolveJournal(transaction, journalType),
     resolveAccount(transaction, debit),
     resolveAccount(transaction, credit)
+  ]);
+  const [debitAnalyticAccount, creditAnalyticAccount] = await Promise.all([
+    resolveAnalyticAccount(transaction, debitAccount),
+    resolveAnalyticAccount(transaction, creditAccount)
   ]);
   return transaction.journalEntry.create({
     data: {
@@ -42,8 +51,8 @@ async function createBalancedEntry(transaction, { journalType, reference, descri
       createdById,
       items: {
         create: [
-          { accountId: debitAccount.id, partnerId, debit: amount, credit: 0 },
-          { accountId: creditAccount.id, partnerId, debit: 0, credit: amount }
+          { accountId: debitAccount.id, analyticAccountId: debitAnalyticAccount?.id || null, partnerId, debit: amount, credit: 0 },
+          { accountId: creditAccount.id, analyticAccountId: creditAnalyticAccount?.id || null, partnerId, debit: 0, credit: amount }
         ]
       }
     }

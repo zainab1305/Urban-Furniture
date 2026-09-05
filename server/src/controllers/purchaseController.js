@@ -31,12 +31,18 @@ async function resolveJournal(transaction, type) {
   return transaction.journal.upsert({ where: { code: `AUTO-${type}` }, update: {}, create: { code: `AUTO-${type}`, name: names[type] || `${type} Journal`, type } });
 }
 
+async function resolveAnalyticAccount(transaction, account) {
+  if (!['INCOME', 'EXPENSE'].includes(account.type)) return null;
+  return transaction.analyticAccount.findFirst({ where: { type: account.type } });
+}
+
 async function postEntry(transaction, { journalType, reference, description, partnerId, debitName, creditName, amount, debitAccountId, creditAccountId }) {
   const journal = await resolveJournal(transaction, journalType);
   const debit = await resolveAccount(transaction, debitName, debitAccountId);
   const credit = await resolveAccount(transaction, creditName, creditAccountId);
   if (!journal || !debit || !credit) throw Object.assign(new Error('Unable to resolve accounts for automatic journal entry.'), { statusCode: 400 });
-  return transaction.journalEntry.create({ data: { journalId: journal.id, date: new Date(), reference, description, status: 'POSTED', items: { create: [{ accountId: debit.id, partnerId, debit: amount, credit: 0 }, { accountId: credit.id, partnerId, debit: 0, credit: amount }] } } });
+  const [debitAnalyticAccount, creditAnalyticAccount] = await Promise.all([resolveAnalyticAccount(transaction, debit), resolveAnalyticAccount(transaction, credit)]);
+  return transaction.journalEntry.create({ data: { journalId: journal.id, date: new Date(), reference, description, status: 'POSTED', items: { create: [{ accountId: debit.id, analyticAccountId: debitAnalyticAccount?.id || null, partnerId, debit: amount, credit: 0 }, { accountId: credit.id, analyticAccountId: creditAnalyticAccount?.id || null, partnerId, debit: 0, credit: amount }] } } });
 }
 
 function validateOrder({ vendorId, items }) {
