@@ -26,6 +26,46 @@ export async function archiveContact(request, response) {
   response.json({ success: true, message: 'Contact archived.' });
 }
 
+export async function listAccounts(request, response) {
+  const { search, type, status } = request.query;
+  const accounts = await prisma.account.findMany({
+    where: {
+      ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
+      ...(type && type !== 'ALL' ? { type } : {}),
+      ...(status && status !== 'ALL' ? { isActive: status === 'ACTIVE' } : {})
+    },
+    orderBy: [{ type: 'asc' }, { name: 'asc' }]
+  });
+  response.json({ success: true, data: accounts });
+}
+
+export async function createAccount(request, response) {
+  const { name, type } = request.body;
+  if (!name?.trim() || !['ASSET', 'LIABILITY', 'EXPENSE', 'INCOME', 'CAPITAL'].includes(type)) {
+    return response.status(400).json({ success: false, message: 'Account name and type are required.' });
+  }
+  const account = await prisma.account.create({ data: { code: `CUSTOM-${Date.now()}`, name: name.trim(), type } });
+  response.status(201).json({ success: true, data: account });
+}
+
+export async function updateAccount(request, response) {
+  const { name, type, isActive } = request.body;
+  const account = await prisma.account.update({
+    where: { id: request.params.id },
+    data: {
+      ...(name !== undefined ? { name: name.trim() } : {}),
+      ...(type ? { type } : {}),
+      ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {})
+    }
+  });
+  response.json({ success: true, data: account });
+}
+
+export async function archiveAccount(request, response) {
+  await prisma.account.update({ where: { id: request.params.id }, data: { isActive: false } });
+  response.json({ success: true, message: 'Account archived.' });
+}
+
 export async function listProducts(request, response) {
   const { search, type, status } = request.query;
   const products = await prisma.product.findMany({ include: { category: true }, where: { ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { sku: { contains: search, mode: 'insensitive' } }] } : {}), ...(type && type !== 'ALL' ? { type } : {}), ...(status && status !== 'ALL' ? { isActive: status === 'ACTIVE' } : {}) }, orderBy: { createdAt: 'desc' } });

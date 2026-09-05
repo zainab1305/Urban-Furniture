@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
-import { archiveContact, archiveProduct, createContact, createProduct, listContacts, listProducts, updateContact, updateProduct } from '../controllers/resourceController.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { archiveAccount, archiveContact, archiveProduct, createAccount, createContact, createProduct, listAccounts, listContacts, listProducts, updateAccount, updateContact, updateProduct } from '../controllers/resourceController.js';
 
 const resources = ['contacts', 'products', 'accounts', 'journals', 'analytic-accounts', 'budgets', 'sales', 'purchases', 'payments', 'journal-entries', 'reports'];
 export const resourceRoutes = Router();
@@ -13,4 +13,9 @@ resourceRoutes.get('/products', listProducts);
 resourceRoutes.post('/products', createProduct);
 resourceRoutes.patch('/products/:id', updateProduct);
 resourceRoutes.delete('/products/:id', archiveProduct);
-resources.filter(resource => !['contacts', 'products'].includes(resource)).forEach(resource => resourceRoutes.get(`/${resource}`, (_request, response) => response.json({ success: true, data: [], message: `${resource} module placeholder` })));
+resourceRoutes.use('/accounts', authorize('ADMIN', 'ACCOUNTANT'));
+resourceRoutes.get('/accounts', listAccounts);
+resourceRoutes.post('/accounts', createAccount);
+resourceRoutes.patch('/accounts/:id', updateAccount);
+resourceRoutes.delete('/accounts/:id', archiveAccount);
+resources.filter(resource => !['contacts', 'products', 'accounts'].includes(resource)).forEach(resource => resourceRoutes.get(`/${resource}`, (_request, response) => response.json({ success: true, data: [], message: `${resource} module placeholder` })));

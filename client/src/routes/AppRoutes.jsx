@@ -9,7 +9,9 @@ import { PlaceholderPage } from '../pages/PlaceholderPage.jsx';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.jsx';
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage.jsx';
 import { AdminOnlyRoute } from '../pages/admin/AdminForbiddenPage.jsx';
+import { AccountingOnlyRoute } from '../pages/admin/AdminForbiddenPage.jsx';
 import { MasterDataPage } from '../pages/MasterDataPage.jsx';
+import { AccountsPage } from '../pages/accounts/AccountsPage.jsx';
 
 const routes = [
   ['/accounts', 'Chart of Accounts', 'Organize the financial structure for reporting.'],
@@ -123,6 +125,9 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/contacts" element={<MasterDataPage kind="contacts" />} />
           <Route path="/products" element={<MasterDataPage kind="products" />} />
+          <Route element={<AccountingOnlyRoute />}>
+            <Route path="/accounts" element={<AccountsPage />} />
+          </Route>
           <Route element={<AdminOnlyRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />

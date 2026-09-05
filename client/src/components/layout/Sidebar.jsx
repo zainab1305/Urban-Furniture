@@ -102,7 +102,7 @@ export function Sidebar() {
           <Settings2 size={16} />
           <span>
             <b>Workspace setup</b>
-            <small>Connected to PostgreSQL</small>
+            
           </span>
         </div>
         <div className="sidebar-user">
