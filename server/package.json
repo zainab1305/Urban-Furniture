@@ -14,7 +14,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
-    "@prisma/client": "latest",
+    "@prisma/client": "6.19.0",
     "bcrypt": "latest",
     "cors": "latest",
     "dotenv": "latest",
@@ -25,6 +25,6 @@
   },
   "devDependencies": {
     "nodemon": "latest",
-    "prisma": "latest"
+    "prisma": "6.19.0"
   }
 }

@@ -7,14 +7,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole { ADMIN ACCOUNTANT CONTACT }
-enum ContactType { CUSTOMER VENDOR BOTH }
-enum ProductType { GOODS SERVICE COMBO }
-enum AccountType { ASSET LIABILITY EXPENSE INCOME CAPITAL }
-enum JournalType { SALES PURCHASE BANK CASH GENERAL }
-enum AnalyticType { INCOME EXPENSE }
-enum DocumentStatus { DRAFT CONFIRMED PAID CANCELLED }
-enum PaymentMethod { CASH BANK }
+enum UserRole {
+  ADMIN
+  ACCOUNTANT
+  CONTACT
+}
+
+enum ContactType {
+  CUSTOMER
+  VENDOR
+  BOTH
+}
+
+enum ProductType {
+  GOODS
+  SERVICE
+  COMBO
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EXPENSE
+  INCOME
+  CAPITAL
+}
+
+enum JournalType {
+  SALES
+  PURCHASE
+  BANK
+  CASH
+  GENERAL
+}
+
+enum AnalyticType {
+  INCOME
+  EXPENSE
+}
+
+enum DocumentStatus {
+  DRAFT
+  CONFIRMED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK
+}
 
 model User {
   id        String   @id @default(cuid())
