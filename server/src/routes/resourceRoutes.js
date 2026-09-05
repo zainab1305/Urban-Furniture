@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { contactImageUpload, productImageUpload } from '../middleware/contactUpload.js';
-import { archiveAccount, archiveContact, archiveProduct, createAccount, createContact, createProduct, getProfitLossReport, listAccounts, listContacts, listProducts, updateAccount, updateContact, updateProduct } from '../controllers/resourceController.js';
+import { archiveAccount, archiveContact, archiveProduct, createAccount, createContact, createProduct, getBalanceSheetReport, getProfitLossReport, listAccounts, listContacts, listProducts, updateAccount, updateContact, updateProduct } from '../controllers/resourceController.js';
 import { archiveJournal, createJournal, createJournalEntry, getJournalEntry, listJournalEntries, listJournals, postJournalEntry, updateJournal } from '../controllers/journalController.js';
 import { createAnalyticAccount, createBudget, deleteAnalyticAccount, listAnalyticAccounts, listBudgets, updateAnalyticAccount, updateBudget, updateBudgetStatus } from '../controllers/planningController.js';
 import { listPaymentTargets, registerPayment } from '../controllers/paymentController.js';
@@ -19,6 +19,7 @@ resourceRoutes.post('/products', productImageUpload.single('imageUrl'), createPr
 resourceRoutes.patch('/products/:id', productImageUpload.single('imageUrl'), updateProduct);
 resourceRoutes.delete('/products/:id', archiveProduct);
 resourceRoutes.get('/reports/profit-loss', getProfitLossReport);
+resourceRoutes.get('/reports/balance-sheet', getBalanceSheetReport);
 resourceRoutes.use('/accounts', authorize('ADMIN', 'ACCOUNTANT'));
 resourceRoutes.get('/accounts', listAccounts);
 resourceRoutes.post('/accounts', createAccount);

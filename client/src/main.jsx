@@ -11,6 +11,7 @@ import './payments.css';
 import './planning.css';
 import './portal.css';
 import './sales.css';
+import './reports.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

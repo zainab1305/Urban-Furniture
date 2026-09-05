@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { defaultAccounts } from '../src/config/db.js';
 
 const prisma = new PrismaClient();
 
@@ -25,21 +26,10 @@ async function main() {
 
   console.log(`Database seeded successfully. Admin user ready: ${admin.loginId} (${admin.email})`);
 
-  const accounts = [
-    ['1000', 'Cash', 'ASSET'],
-    ['1010', 'Bank', 'ASSET'],
-    ['1100', 'Debtors', 'ASSET'],
-    ['2000', 'Creditors', 'LIABILITY'],
-    ['4000', 'Sales Income', 'INCOME'],
-    ['5000', 'Purchase Expense', 'EXPENSE'],
-    ['5100', 'Other Expense', 'EXPENSE'],
-    ['3000', 'Capital', 'CAPITAL']
-  ];
-
-  for (const [code, name, type] of accounts) {
+  for (const [code, name, type] of defaultAccounts) {
     await prisma.account.upsert({ where: { code }, update: { name, type, isActive: true }, create: { code, name, type } });
   }
-  console.log(`Default chart of accounts ready: ${accounts.length} accounts`);
+  console.log(`Default chart of accounts ready: ${defaultAccounts.length} accounts`);
 
   const contacts = [
     ['Aarav Mehta', 'CUSTOMER', 'aarav.mehta@northstarhomes.in', '+91 98765 12001', '18 Linking Road', 'Mumbai', 'Maharashtra', '400052'],

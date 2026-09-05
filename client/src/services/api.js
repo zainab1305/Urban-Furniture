@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
-const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : '/api';
+const browserApiUrl = typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ? `${window.location.protocol}//${window.location.hostname}:5000`
+  : '';
+const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : browserApiUrl ? `${browserApiUrl}/api` : '/api';
 
 export function assetUrl(assetPath) {
   if (!assetPath || assetPath.startsWith('data:') || assetPath.startsWith('blob:') || assetPath.startsWith('http')) {
@@ -12,8 +15,8 @@ export function assetUrl(assetPath) {
     return `${configuredApiUrl}${assetPath}`;
   }
 
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `${window.location.protocol}//${window.location.hostname}:5000${assetPath}`;
+  if (browserApiUrl) {
+    return `${browserApiUrl}${assetPath}`;
   }
 
   return assetPath;

@@ -125,3 +125,27 @@ export async function getProfitLossReport(request, response) {
   totals.netIncome = totals.income - totals.expenses;
   response.json({ success: true, data: { year, ...totals } });
 }
+
+export async function getBalanceSheetReport(request, response) {
+  const requestedYear = Number(request.query.year);
+  const year = Number.isInteger(requestedYear) && requestedYear >= 2000 && requestedYear <= 2100 ? requestedYear : new Date().getFullYear();
+  const start = new Date(Date.UTC(year, 0, 1));
+  const end = new Date(Date.UTC(year + 1, 0, 1));
+  const [accounts, items] = await Promise.all([
+    prisma.account.findMany({ where: { isActive: true, type: { in: ['ASSET', 'LIABILITY', 'CAPITAL'] } }, orderBy: [{ type: 'asc' }, { name: 'asc' }] }),
+    prisma.journalItem.findMany({ where: { journalEntry: { status: 'POSTED', date: { gte: start, lt: end } } }, select: { accountId: true, debit: true, credit: true } })
+  ]);
+  const movements = items.reduce((result, item) => {
+    const movement = result[item.accountId] || { debit: 0, credit: 0 };
+    movement.debit += parseNumber(item.debit);
+    movement.credit += parseNumber(item.credit);
+    result[item.accountId] = movement;
+    return result;
+  }, {});
+  const rows = accounts.map(account => {
+    const movement = movements[account.id] || { debit: 0, credit: 0 };
+    const balance = parseNumber(account.openingBalance) + (account.type === 'ASSET' ? movement.debit - movement.credit : movement.credit - movement.debit);
+    return { id: account.id, code: account.code, name: account.name, type: account.type, balance };
+  });
+  response.json({ success: true, data: { year, assets: rows.filter(row => row.type === 'ASSET'), liabilities: rows.filter(row => row.type === 'LIABILITY'), capital: rows.filter(row => row.type === 'CAPITAL') } });
+}
