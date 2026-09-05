@@ -67,14 +67,14 @@ export async function listJournalEntries(request, response) {
   const { search, status } = request.query;
   const entries = await prisma.journalEntry.findMany({
     where: { ...(status && status !== 'ALL' ? { status } : {}), ...(search ? { OR: [{ reference: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }] } : {}) },
-    include: { journal: true, items: { include: { account: true, partner: true } } },
+    include: { journal: true, items: { include: { account: true } } },
     orderBy: { date: 'desc' }
   });
   response.json({ success: true, data: entries.map(publicEntry) });
 }
 
 export async function getJournalEntry(request, response) {
-  const entry = await prisma.journalEntry.findUnique({ where: { id: request.params.id }, include: { journal: true, items: { include: { account: true, partner: true } } } });
+  const entry = await prisma.journalEntry.findUnique({ where: { id: request.params.id }, include: { journal: true, items: { include: { account: true } } } });
   if (!entry) return response.status(404).json({ success: false, message: 'Journal entry not found.' });
   response.json({ success: true, data: publicEntry(entry) });
 }
@@ -91,12 +91,7 @@ export async function createJournalEntry(request, response) {
     const accountIds = [...new Set(items.map(item => item.accountId))];
     const activeAccounts = await transaction.account.count({ where: { id: { in: accountIds }, isActive: true } });
     if (activeAccounts !== accountIds.length) throw Object.assign(new Error('Every journal item must use an active account.'), { statusCode: 400 });
-    const partnerIds = items.map(item => item.partnerId).filter(Boolean);
-    if (partnerIds.length) {
-      const activePartners = await transaction.contact.count({ where: { id: { in: partnerIds }, isActive: true } });
-      if (activePartners !== new Set(partnerIds).size) throw Object.assign(new Error('Every partner must be an active contact.'), { statusCode: 400 });
-    }
-    return transaction.journalEntry.create({ data: { date: new Date(date), journalId, reference: reference?.trim() || null, description: description?.trim() || null, status, createdById: request.user.id, items: { create: items.map(item => ({ accountId: item.accountId, partnerId: item.partnerId || null, debit: numberValue(item.debit), credit: numberValue(item.credit) })) } }, include: { journal: true, items: { include: { account: true, partner: true } } } });
+    return transaction.journalEntry.create({ data: { date: new Date(date), journalId, reference: reference?.trim() || null, description: description?.trim() || null, status, createdById: request.user.id, items: { create: items.map(item => ({ accountId: item.accountId, debit: numberValue(item.debit), credit: numberValue(item.credit) })) } }, include: { journal: true, items: { include: { account: true } } } });
   });
   response.status(201).json({ success: true, data: publicEntry(entry) });
 }
@@ -107,6 +102,6 @@ export async function postJournalEntry(request, response) {
   if (entry.status === 'POSTED') return response.status(409).json({ success: false, message: 'Journal entry is already posted.' });
   const error = validateItems(entry.items);
   if (error) return response.status(400).json({ success: false, message: error });
-  const posted = await prisma.$transaction(transaction => transaction.journalEntry.update({ where: { id: entry.id }, data: { status: 'POSTED' }, include: { journal: true, items: { include: { account: true, partner: true } } } }));
+  const posted = await prisma.$transaction(transaction => transaction.journalEntry.update({ where: { id: entry.id }, data: { status: 'POSTED' }, include: { journal: true, items: { include: { account: true } } } }));
   response.json({ success: true, data: publicEntry(posted) });
 }
