@@ -8,6 +8,7 @@ import './admin.css';
 import './journals.css';
 import './purchases.css';
 import './planning.css';
+import './sales.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

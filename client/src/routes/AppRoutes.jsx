@@ -20,6 +20,7 @@ import { BudgetReportPage } from '../pages/reports/BudgetReportPage.jsx';
 import { PortalRecordsPage } from '../pages/portal/PortalRecordsPage.jsx';
 import { PortalPaymentsPage } from '../pages/portal/PortalPaymentsPage.jsx';
 import { PurchasesPage } from '../pages/purchases/PurchasesPage.jsx';
+import { SalesPage } from '../pages/sales/SalesPage.jsx';
 
 const routes = [
   ['/accounts', 'Chart of Accounts', 'Organize the financial structure for reporting.'],
@@ -138,6 +139,9 @@ export function AppRoutes() {
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/purchases/orders" element={<PurchasesPage section="orders" />} />
             <Route path="/purchases/bills" element={<PurchasesPage section="bills" />} />
+            <Route path="/sales" element={<SalesPage />} />
+            <Route path="/sales/orders" element={<SalesPage section="orders" />} />
+            <Route path="/sales/invoices" element={<SalesPage section="invoices" />} />
           </Route>
           <Route path="/portal/invoices" element={<PortalOnlyRoute><PortalRecordsPage kind="invoices" /></PortalOnlyRoute>} />
           <Route path="/portal/bills" element={<PortalOnlyRoute><PortalRecordsPage kind="bills" /></PortalOnlyRoute>} />
@@ -147,7 +151,7 @@ export function AppRoutes() {
             <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
           <Route element={<AccountingOnlyRoute />}>
-            {routes.filter(([path]) => !['/analytic-accounts', '/budgets', '/reports/budget'].includes(path)).map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
+            {routes.filter(([path]) => !['/analytic-accounts', '/budgets', '/reports/budget', '/sales', '/sales/orders', '/sales/invoices'].includes(path)).map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
           </Route>
         </Route>
       </Route>
