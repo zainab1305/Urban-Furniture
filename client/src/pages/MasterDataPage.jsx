@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Archive, Edit3, Plus, Search, X } from 'lucide-react';
+import { Archive, Edit3, Grid2X2, List, Plus, Search, X } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader.jsx';
 import { api, assetUrl } from '../services/api.js';
 
@@ -15,6 +15,7 @@ export function MasterDataPage({ kind }) {
   const [notice, setNotice] = useState('');
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(isContact ? contactEmpty : productEmpty);
+  const [viewMode, setViewMode] = useState(isContact ? 'cards' : 'list');
 
   const load = async () => {
     setLoading(true);
@@ -87,14 +88,20 @@ export function MasterDataPage({ kind }) {
       {isContact ? <><span>{record.email || 'No email'}</span><span>{record.mobile || 'No phone'}</span><small>{record.city || record.state || 'Contact'}</small></> : <><span>{record.sku}</span><span>{record.type} | {record.category?.name || 'Uncategorized'}</span><small>Sales {Number(record.salesPrice).toLocaleString('en-IN')} | Stock {record.stockQuantity}</small></>}
     </div><div className="master-card-actions"><button onClick={() => open(record)} title="Edit"><Edit3 size={14} /></button><button onClick={() => archive(record)} title="Archive"><Archive size={14} /></button></div>
   </article>);
+  const recordRows = records.map(record => <tr key={record.id}>
+    <td><input className="record-select" type="checkbox" aria-label={`Select ${record.name}`} /></td>
+    {isContact ? <><td><b>{record.name}</b></td><td>{record.email || '-'}</td><td>{record.mobile || '-'}</td><td>{record.city || record.state || '-'}</td></> : <><td><b>{record.name}</b></td><td>{record.category?.name || '-'}</td><td>{record.type}</td><td>{Number(record.salesPrice).toLocaleString('en-IN')}</td><td>{Number(record.purchasePrice).toLocaleString('en-IN')}</td></>}
+    <td><span className={`status-pill ${record.isActive ? 'active' : 'inactive'}`}><i />{record.isActive ? 'Active' : 'Archived'}</span></td>
+    <td><div className="user-actions"><button onClick={() => open(record)} title="Edit"><Edit3 size={14} /></button><button onClick={() => archive(record)} title="Archive"><Archive size={14} /></button></div></td>
+  </tr>);
 
   return <>
     <PageHeader eyebrow={`MASTER DATA / ${kind.toUpperCase()}`} title={isContact ? 'Contacts' : 'Products'} description={isContact ? 'Manage customers, vendors and business relationships.' : 'Manage products, prices and inventory.'} action={<button className="primary-button" onClick={() => open()}><Plus size={16} /> Add {isContact ? 'contact' : 'product'}</button>} />
     {notice && <div className="auth-alert success">{notice}<button onClick={() => setNotice('')}><X size={14} /></button></div>}
     {error && <div className="auth-alert error">{error}</div>}
     <section className="surface users-card">
-      <div className="admin-toolbar"><label className="table-search"><Search size={15} /><input value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} placeholder={`Search ${isContact ? 'contacts' : 'products'}`} /></label><select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}>{(isContact ? [['ALL', 'All types'], ['CUSTOMER', 'Customers'], ['VENDOR', 'Vendors'], ['BOTH', 'Both']] : [['ALL', 'All types'], ['GOODS', 'Goods'], ['SERVICE', 'Services'], ['COMBO', 'Combo']]).map(option => <option key={option[0]} value={option[0]}>{option[1]}</option>)}</select><select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="ALL">All status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Archived</option></select></div>
-      {loading ? <div className="empty-table">Loading records...</div> : !records.length ? <div className="empty-table">No records found.</div> : <div className="master-card-grid">{recordCards}</div>}
+      <div className="admin-toolbar"><label className="table-search"><Search size={15} /><input value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} placeholder={`Search ${isContact ? 'contacts' : 'products'}`} /></label><select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}>{(isContact ? [['ALL', 'All types'], ['CUSTOMER', 'Customers'], ['VENDOR', 'Vendors'], ['BOTH', 'Both']] : [['ALL', 'All types'], ['GOODS', 'Goods'], ['SERVICE', 'Services'], ['COMBO', 'Combo']]).map(option => <option key={option[0]} value={option[0]}>{option[1]}</option>)}</select><select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="ALL">All status</option><option value="ACTIVE">Active</option><option value="INACTIVE">Archived</option></select><div className="view-toggle" aria-label="View mode"><button className={viewMode === 'list' ? 'selected' : ''} onClick={() => setViewMode('list')} title="List view"><List size={16} /></button><button className={viewMode === 'cards' ? 'selected' : ''} onClick={() => setViewMode('cards')} title="Card view"><Grid2X2 size={16} /></button></div></div>
+      {loading ? <div className="empty-table">Loading records...</div> : !records.length ? <div className="empty-table">No records found.</div> : viewMode === 'cards' ? <div className="master-card-grid">{recordCards}</div> : <div className="table-wrap"><table className="master-list-table"><thead><tr>{(isContact ? ['SELECT', 'NAME', 'EMAIL', 'PHONE', 'LOCATION', 'STATUS', 'ACTIONS'] : ['SELECT', 'PRODUCT', 'CATEGORY', 'TYPE', 'SALES PRICE', 'COST', 'STATUS', 'ACTIONS']).map(header => <th key={header}>{header}</th>)}</tr></thead><tbody>{recordRows}</tbody></table></div>}
     </section>
     {modal && <div className="modal-backdrop"><section className={`modal admin-user-modal ${isContact ? 'contact-modal' : ''}`}><button className="modal-close" onClick={() => setModal(null)}><X size={17} /></button><div className="eyebrow">{isContact ? 'CONTACT' : 'PRODUCT'} MANAGEMENT</div><h2>{modal.type === 'create' ? `Add ${isContact ? 'contact' : 'product'}` : `Edit ${isContact ? 'contact' : 'product'}`}</h2><form onSubmit={save}>{isContact ? <><div className="contact-fields">{contactFields.map(([name, label]) => <label key={name}>{label}<input name={name} value={form[name] ?? ''} onChange={update} required={name === 'name'} /></label>)}</div><label className="contact-image-upload"><span>Upload image</span><input type="file" accept="image/*" onChange={updateImage} /><span className="image-upload-box">{(form.profileImagePreview || (typeof form.profileImage === 'string' && form.profileImage)) ? <img src={form.profileImagePreview || assetUrl(form.profileImage)} alt="Contact preview" /> : 'Upload Image'}</span></label></> : <>{productFields.map(([name, label]) => <label key={name}>{label}<input name={name} value={form[name] ?? ''} onChange={update} required={name === 'name' || name === 'sku'} /></label>)}</>}<label>Type<select name="type" value={form.type} onChange={update}>{typeOptions.map(option => <option key={option[0]} value={option[0]}>{option[1]}</option>)}</select></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(null)}>Cancel</button><button className="primary-button">Save</button></div></form></section></div>}
   </>;

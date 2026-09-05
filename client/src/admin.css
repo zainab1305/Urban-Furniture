@@ -279,6 +279,55 @@
   background: var(--green-soft);
 }
 
+.view-toggle {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+
+.view-toggle button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.view-toggle button.selected,
+.view-toggle button:hover {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.master-list-table {
+  min-width: 760px;
+}
+
+.master-list-table th:first-child,
+.master-list-table td:first-child {
+  width: 52px;
+  text-align: center;
+}
+
+.record-select {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--green);
+}
+
+.master-list-table td {
+  height: 52px;
+  padding: 10px 12px;
+}
+
 @media (max-width: 560px) {
   .modal-backdrop {
     align-items: flex-end;
