@@ -17,6 +17,7 @@ import { JournalEntriesPage } from '../pages/journal-entries/JournalEntriesPage.
 import { AnalyticAccountsPage } from '../pages/analytic-accounts/AnalyticAccountsPage.jsx';
 import { BudgetsPage } from '../pages/budgets/BudgetsPage.jsx';
 import { BudgetReportPage } from '../pages/reports/BudgetReportPage.jsx';
+import { ProfitLossPage } from '../pages/reports/ProfitLossPage.jsx';
 import { PortalRecordsPage } from '../pages/portal/PortalRecordsPage.jsx';
 import { PortalPaymentsPage } from '../pages/portal/PortalPaymentsPage.jsx';
 import { PaymentsPage } from '../pages/payments/PaymentsPage.jsx';
@@ -137,6 +138,7 @@ export function AppRoutes() {
             <Route path="/analytic-accounts" element={<AnalyticAccountsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/reports/budget" element={<BudgetReportPage />} />
+            <Route path="/reports/profit-loss" element={<ProfitLossPage />} />
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/purchases/orders" element={<PurchasesPage section="orders" />} />
             <Route path="/purchases/bills" element={<PurchasesPage section="bills" />} />

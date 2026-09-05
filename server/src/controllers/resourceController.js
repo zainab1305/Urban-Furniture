@@ -99,3 +99,29 @@ export async function archiveProduct(request, response) {
   await prisma.product.update({ where: { id: request.params.id }, data: { isActive: false } });
   response.json({ success: true, message: 'Product archived.' });
 }
+
+export async function getProfitLossReport(request, response) {
+  const requestedYear = Number(request.query.year);
+  const year = Number.isInteger(requestedYear) && requestedYear >= 2000 && requestedYear <= 2100 ? requestedYear : new Date().getFullYear();
+  const start = new Date(Date.UTC(year, 0, 1));
+  const end = new Date(Date.UTC(year + 1, 0, 1));
+  const items = await prisma.journalItem.findMany({
+    where: { journalEntry: { status: 'POSTED', date: { gte: start, lt: end } } },
+    select: { debit: true, credit: true, account: { select: { name: true, type: true } } }
+  });
+  const totals = items.reduce((result, item) => {
+    const debit = parseNumber(item.debit);
+    const credit = parseNumber(item.credit);
+    if (item.account.type === 'INCOME') result.incomeFromSales += credit - debit;
+    if (item.account.type === 'EXPENSE') {
+      const amount = debit - credit;
+      result.expenses += amount;
+      if (item.account.name === 'Purchase Expense') result.purchaseExpense += amount;
+      if (item.account.name === 'Other Expense') result.otherExpense += amount;
+    }
+    return result;
+  }, { incomeFromSales: 0, expenses: 0, purchaseExpense: 0, otherExpense: 0 });
+  totals.income = totals.incomeFromSales;
+  totals.netIncome = totals.income - totals.expenses;
+  response.json({ success: true, data: { year, ...totals } });
+}
