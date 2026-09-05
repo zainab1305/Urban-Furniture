@@ -73,15 +73,15 @@ export async function listProducts(request, response) {
 }
 
 export async function createProduct(request, response) {
-  const { sku, name, type, category, salesPrice, purchasePrice, stockQuantity, taxRate } = request.body;
+  const { sku, name, type, category, salesPrice, purchasePrice, stockQuantity, taxRate } = request.body || {};
   if (!sku?.trim() || !name?.trim() || !['GOODS', 'SERVICE', 'COMBO'].includes(type)) return response.status(400).json({ success: false, message: 'SKU, name and product type are required.' });
-  const product = await prisma.product.create({ data: { sku: sku.trim(), name: name.trim(), type, salesPrice: parseNumber(salesPrice), purchasePrice: parseNumber(purchasePrice), stockQuantity: parseNumber(stockQuantity), taxRate: parseNumber(taxRate), category: category?.trim() ? { connectOrCreate: { where: { name: category.trim() }, create: { name: category.trim() } } } : undefined } });
+  const product = await prisma.product.create({ data: { sku: sku.trim(), name: name.trim(), type, salesPrice: parseNumber(salesPrice), purchasePrice: parseNumber(purchasePrice), stockQuantity: parseNumber(stockQuantity), taxRate: parseNumber(taxRate), imageUrl: request.file ? `/uploads/products/${request.file.filename}` : null, category: category?.trim() ? { connectOrCreate: { where: { name: category.trim() }, create: { name: category.trim() } } } : undefined } });
   response.status(201).json({ success: true, data: product });
 }
 
 export async function updateProduct(request, response) {
-  const { sku, name, type, category, salesPrice, purchasePrice, stockQuantity, taxRate, isActive } = request.body;
-  const product = await prisma.product.update({ where: { id: request.params.id }, data: { ...(sku !== undefined ? { sku: sku.trim() } : {}), ...(name !== undefined ? { name: name.trim() } : {}), ...(type ? { type } : {}), ...(salesPrice !== undefined ? { salesPrice: parseNumber(salesPrice) } : {}), ...(purchasePrice !== undefined ? { purchasePrice: parseNumber(purchasePrice) } : {}), ...(stockQuantity !== undefined ? { stockQuantity: parseNumber(stockQuantity) } : {}), ...(taxRate !== undefined ? { taxRate: parseNumber(taxRate) } : {}), ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}), ...(category !== undefined ? { category: category?.trim() ? { connectOrCreate: { where: { name: category.trim() }, create: { name: category.trim() } } } : { disconnect: true } } : {}) } });
+  const { sku, name, type, category, salesPrice, purchasePrice, stockQuantity, taxRate, isActive } = request.body || {};
+  const product = await prisma.product.update({ where: { id: request.params.id }, data: { ...(sku !== undefined ? { sku: sku.trim() } : {}), ...(name !== undefined ? { name: name.trim() } : {}), ...(type ? { type } : {}), ...(salesPrice !== undefined ? { salesPrice: parseNumber(salesPrice) } : {}), ...(purchasePrice !== undefined ? { purchasePrice: parseNumber(purchasePrice) } : {}), ...(stockQuantity !== undefined ? { stockQuantity: parseNumber(stockQuantity) } : {}), ...(taxRate !== undefined ? { taxRate: parseNumber(taxRate) } : {}), ...(request.file ? { imageUrl: `/uploads/products/${request.file.filename}` } : {}), ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}), ...(category !== undefined ? { category: category?.trim() ? { connectOrCreate: { where: { name: category.trim() }, create: { name: category.trim() } } } : { disconnect: true } } : {}) } });
   response.json({ success: true, data: product });
 }
 

@@ -145,6 +145,15 @@
   font-weight: 500;
 }
 
+.product-image-upload {
+  grid-column: 1 / -1;
+  max-width: 220px;
+}
+
+.product-card-image {
+  background: #fafcfb;
+}
+
 .contact-image-upload input[type='file'] {
   position: absolute;
   width: 1px;

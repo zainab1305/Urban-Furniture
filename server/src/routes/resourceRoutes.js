@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { contactImageUpload } from '../middleware/contactUpload.js';
+import { contactImageUpload, productImageUpload } from '../middleware/contactUpload.js';
 import { archiveAccount, archiveContact, archiveProduct, createAccount, createContact, createProduct, listAccounts, listContacts, listProducts, updateAccount, updateContact, updateProduct } from '../controllers/resourceController.js';
 import { archiveJournal, createJournal, createJournalEntry, getJournalEntry, listJournalEntries, listJournals, postJournalEntry, updateJournal } from '../controllers/journalController.js';
 
@@ -12,8 +12,8 @@ resourceRoutes.post('/contacts', contactImageUpload.single('profileImage'), crea
 resourceRoutes.patch('/contacts/:id', contactImageUpload.single('profileImage'), updateContact);
 resourceRoutes.delete('/contacts/:id', archiveContact);
 resourceRoutes.get('/products', listProducts);
-resourceRoutes.post('/products', createProduct);
-resourceRoutes.patch('/products/:id', updateProduct);
+resourceRoutes.post('/products', productImageUpload.single('imageUrl'), createProduct);
+resourceRoutes.patch('/products/:id', productImageUpload.single('imageUrl'), updateProduct);
 resourceRoutes.delete('/products/:id', archiveProduct);
 resourceRoutes.use('/accounts', authorize('ADMIN', 'ACCOUNTANT'));
 resourceRoutes.get('/accounts', listAccounts);
