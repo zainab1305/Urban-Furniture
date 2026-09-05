@@ -1,0 +1,1 @@
+export function ConfirmDialog({ message, onConfirm, onCancel }) { return <div className="confirm-dialog"><p>{message}</p><button onClick={onCancel}>Cancel</button><button onClick={onConfirm}>Confirm</button></div>; }
