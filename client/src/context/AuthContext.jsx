@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let isMounted = true;
     async function checkSession() {
+      if (!sessionStorage.getItem('uf_auth_token')) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const result = await getSessionApi();
         if (isMounted && result?.data?.user) {
@@ -18,6 +23,7 @@ export function AuthProvider({ children }) {
           setUser(null);
         }
       } catch {
+        sessionStorage.removeItem('uf_auth_token');
         if (isMounted) {
           setUser(null);
         }
