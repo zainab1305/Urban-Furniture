@@ -12,10 +12,11 @@ import { AdminOnlyRoute } from '../pages/admin/AdminForbiddenPage.jsx';
 import { AccountingOnlyRoute } from '../pages/admin/AdminForbiddenPage.jsx';
 import { MasterDataPage } from '../pages/MasterDataPage.jsx';
 import { AccountsPage } from '../pages/accounts/AccountsPage.jsx';
+import { JournalsPage } from '../pages/journals/JournalsPage.jsx';
+import { JournalEntriesPage } from '../pages/journal-entries/JournalEntriesPage.jsx';
 
 const routes = [
   ['/accounts', 'Chart of Accounts', 'Organize the financial structure for reporting.'],
-  ['/journals', 'Journals', 'Set up the journals used for business transactions.'],
   ['/analytic-accounts', 'Analytic Accounts', 'Track income and expenses by dimension.'],
   ['/budgets', 'Budgets', 'Plan spending and monitor utilization.'],
   ['/sales', 'Sales', 'Prepare the sales workflow foundation.'],
@@ -25,7 +26,6 @@ const routes = [
   ['/purchases/orders', 'Purchase Orders', 'Purchase order workspace placeholder.'],
   ['/purchases/bills', 'Vendor Bills', 'Vendor bill workspace placeholder.'],
   ['/payments', 'Payments', 'Record incoming and outgoing payments.'],
-  ['/journal-entries', 'Journal Entries', 'Review double-entry records.'],
   ['/reports/profit-loss', 'Profit & Loss', 'Review revenue and expense reporting.'],
   ['/reports/balance-sheet', 'Balance Sheet', 'Review assets, liabilities and capital.'],
   ['/reports/budget', 'Budget Report', 'Compare planned and actual spending.'],
@@ -127,6 +127,8 @@ export function AppRoutes() {
           <Route path="/products" element={<MasterDataPage kind="products" />} />
           <Route element={<AccountingOnlyRoute />}>
             <Route path="/accounts" element={<AccountsPage />} />
+            <Route path="/journals" element={<JournalsPage />} />
+            <Route path="/journal-entries" element={<JournalEntriesPage />} />
           </Route>
           <Route element={<AdminOnlyRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
