@@ -6,10 +6,12 @@ import { SignupPage } from '../pages/auth/SignupPage.jsx';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage.jsx';
 import { DashboardPage } from '../pages/dashboard/DashboardPage.jsx';
 import { PlaceholderPage } from '../pages/PlaceholderPage.jsx';
+import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.jsx';
+import { AdminUsersPage } from '../pages/admin/AdminUsersPage.jsx';
+import { AdminOnlyRoute } from '../pages/admin/AdminForbiddenPage.jsx';
+import { MasterDataPage } from '../pages/MasterDataPage.jsx';
 
 const routes = [
-  ['/contacts', 'Contacts', 'Manage customers, vendors and business relationships.'],
-  ['/products', 'Products', 'Maintain your product catalogue and pricing.'],
   ['/accounts', 'Chart of Accounts', 'Organize the financial structure for reporting.'],
   ['/journals', 'Journals', 'Set up the journals used for business transactions.'],
   ['/analytic-accounts', 'Analytic Accounts', 'Track income and expenses by dimension.'],
@@ -119,6 +121,12 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/contacts" element={<MasterDataPage kind="contacts" />} />
+          <Route path="/products" element={<MasterDataPage kind="products" />} />
+          <Route element={<AdminOnlyRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+          </Route>
           {routes.map(([path, title, description]) => (
             <Route
               key={path}

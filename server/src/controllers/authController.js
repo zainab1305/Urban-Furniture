@@ -23,6 +23,7 @@ const publicUser = user => ({
   name: user.name,
   email: user.email,
   role: user.role,
+  isActive: user.isActive,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt
 });
@@ -189,7 +190,7 @@ export async function login(request, response) {
     });
 
     // Step 4: Compare entered password with stored passwordHash
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
       // Do not reveal whether Login ID exists
       return response.status(401).json({
         success: false,

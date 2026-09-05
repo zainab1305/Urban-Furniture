@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authRoutes } from './routes/authRoutes.js';
 import { resourceRoutes } from './routes/resourceRoutes.js';
+import { adminRoutes } from './routes/adminRoutes.js';
 
 export const app = express();
 app.use(cors({ origin: env.clientUrls, credentials: true }));
@@ -18,5 +19,6 @@ app.get('/api/health', (_request, response) =>
 );
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api', resourceRoutes);
 app.use(errorHandler);

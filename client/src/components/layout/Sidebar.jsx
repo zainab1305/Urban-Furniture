@@ -68,6 +68,8 @@ export function Sidebar() {
       ? 'Accountant'
       : 'Contact Workspace';
 
+  const adminGroups = user?.role === 'ADMIN' ? [{ label: 'Administration', items: [['/admin/dashboard', 'Admin Dashboard', LayoutDashboard], ['/admin/users', 'User Management', Users]] }] : [];
+
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -79,7 +81,7 @@ export function Sidebar() {
       </div>
       <div className="workspace-label">ACCOUNTING WORKSPACE</div>
       <nav>
-        {groups.map(group => (
+        {[...adminGroups, ...groups].map(group => (
           <section className="nav-group" key={group.label}>
             <div className="nav-label">{group.label}</div>
             {group.items.map(([to, label, Icon]) => (

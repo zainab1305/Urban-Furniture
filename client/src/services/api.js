@@ -59,3 +59,11 @@ export async function checkLoginIdApi(loginId) {
   });
   return response.data;
 }
+
+export const adminApi = {
+  dashboard: () => api.get('/admin/dashboard'),
+  users: params => api.get('/admin/users', { params }),
+  createUser: payload => api.post('/admin/users', payload),
+  updateUser: (id, payload) => api.patch(`/admin/users/${id}`, payload),
+  archiveUser: id => api.delete(`/admin/users/${id}`)
+};
