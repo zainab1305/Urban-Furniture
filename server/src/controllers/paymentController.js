@@ -1,5 +1,5 @@
 import { prisma } from '../config/db.js';
-import { postCustomerPayment } from '../services/accountingService.js';
+import { postCustomerPayment, postVendorPayment } from '../services/accountingService.js';
 
 const n = value => Number(value || 0);
 const paid = allocations => allocations.reduce((sum, allocation) => sum + n(allocation.amount), 0);
@@ -38,6 +38,7 @@ export async function registerPayment(request, response) {
       await postCustomerPayment(transaction, { reference: payment.paymentNumber, description: `Payment for ${invoice.invoiceNumber}`, partnerId: invoice.customerId, amount: paymentAmount, method, createdById: request.user.id });
     } else {
       await transaction.vendorBill.update({ where: { id: bill.id }, data: { status: nextStatus } });
+      await postVendorPayment(transaction, { reference: payment.paymentNumber, description: `Payment for ${bill.billNumber}`, partnerId: bill.vendorId, amount: paymentAmount, method, createdById: request.user.id });
     }
     return payment;
   });

@@ -1,14 +1,15 @@
 const accountDefinitions = {
-  'Accounts Receivable': { code: '1100', type: 'ASSET' },
-  Sales: { code: '4000', type: 'INCOME' },
-  Bank: { code: '1010', type: 'ASSET' },
-  Cash: { code: '1000', type: 'ASSET' }
+  'Accounts Receivable': { code: '1100', type: 'ASSET', aliases: ['Accounts Receivable', 'Debtors'] },
+  'Accounts Payable': { code: '2000', type: 'LIABILITY', aliases: ['Accounts Payable', 'Creditors'] },
+  Sales: { code: '4000', type: 'INCOME', aliases: ['Sales', 'Sales Income'] },
+  Bank: { code: '1010', type: 'ASSET', aliases: ['Bank'] },
+  Cash: { code: '1000', type: 'ASSET', aliases: ['Cash'] }
 };
 
 async function resolveAccount(transaction, name) {
-  const definition = accountDefinitions[name];
+  const definition = accountDefinitions[name] || { code: `AUTO-${name.replace(/\W/g, '').toUpperCase()}`, type: 'ASSET', aliases: [name] };
   const account = await transaction.account.findFirst({
-    where: { isActive: true, name: { contains: name, mode: 'insensitive' } }
+    where: { isActive: true, OR: definition.aliases.map(alias => ({ name: { contains: alias, mode: 'insensitive' } })) }
   });
   if (account) return account;
   return transaction.account.upsert({
@@ -82,7 +83,11 @@ export async function postPurchase(_transaction, _client) {
   return { status: 'not_implemented', transactionType: 'PURCHASE' };
 }
 
-export async function postVendorPayment(_transaction, _client) {
-  // Future implementation: debit Accounts Payable; credit Cash/Bank.
-  return { status: 'not_implemented', transactionType: 'VENDOR_PAYMENT' };
+export async function postVendorPayment(transaction, details) {
+  return createBalancedEntry(transaction, {
+    ...details,
+    journalType: details.method,
+    debit: 'Accounts Payable',
+    credit: details.method === 'BANK' ? 'Bank' : 'Cash'
+  });
 }
