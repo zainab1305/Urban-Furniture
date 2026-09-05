@@ -10,7 +10,33 @@ const statusTone = status => status === 'PAID' ? 'active' : status === 'PARTIALL
 
 export function PurchasesPage({ section = 'orders' }) {
   const [orders, setOrders] = useState([]); const [bills, setBills] = useState([]); const [vendors, setVendors] = useState([]); const [products, setProducts] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [modal, setModal] = useState(null); const [form, setForm] = useState(blankOrder); const [saving, setSaving] = useState(false);
-  const load = async () => { setLoading(true); setError(''); try { const [orderResponse, billResponse, vendorResponse, productResponse] = await Promise.all([api.get('/purchases/orders'), api.get('/purchases/bills'), api.get('/contacts', { params: { type: 'VENDOR', status: 'ACTIVE' } }), api.get('/products', { params: { status: 'ACTIVE' } })]); setOrders(orderResponse.data.data); setBills(billResponse.data.data); setVendors(vendorResponse.data.data); setProducts(productResponse.data.data); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to load purchase records.'); } finally { setLoading(false); } };
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    const [ordersResult, billsResult, vendorsResult, productsResult] = await Promise.allSettled([
+      api.get('/purchases/orders'),
+      api.get('/purchases/bills'),
+      api.get('/contacts', { params: { type: 'VENDOR', status: 'ACTIVE' } }),
+      api.get('/products', { params: { status: 'ACTIVE' } })
+    ]);
+    if (ordersResult.status === 'fulfilled') setOrders(ordersResult.value.data.data);
+    if (billsResult.status === 'fulfilled') setBills(billsResult.value.data.data);
+    if (vendorsResult.status === 'fulfilled') setVendors(vendorsResult.value.data.data);
+    if (productsResult.status === 'fulfilled') setProducts(productsResult.value.data.data);
+    const failed = [
+      ['purchase orders', ordersResult],
+      ['vendor bills', billsResult],
+      ['vendors', vendorsResult],
+      ['products', productsResult]
+    ].find(([, result]) => result.status === 'rejected');
+    if (failed) {
+      const requestError = failed[1].reason;
+      const status = requestError.response?.status;
+      const serverMessage = requestError.response?.data?.message;
+      setError(`Unable to load ${failed[0]}${status ? ` (${status})` : ''}${serverMessage ? `: ${serverMessage}` : '.'}`);
+    }
+    setLoading(false);
+  };
   useEffect(() => { load(); }, []);
   const openOrder = () => { setForm({ ...blankOrder, vendorId: vendors[0]?.id || '', items: [{ ...blankItem, productId: products[0]?.id || '', unitPrice: products[0]?.purchasePrice || '' }] }); setModal({ type: 'order' }); setError(''); };
   const updateItem = (index, field, value) => setForm(current => ({ ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item) }));
