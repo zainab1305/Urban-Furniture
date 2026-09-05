@@ -2,13 +2,21 @@ import axios from 'axios';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
 const apiBaseUrl = configuredApiUrl ? `${configuredApiUrl}/api` : '/api';
-const apiOrigin = configuredApiUrl || `${window.location.protocol}//${window.location.hostname}:5000`;
 
-export function getAssetUrl(assetPath) {
-  if (!assetPath || assetPath.startsWith('data:') || assetPath.startsWith('blob:') || /^https?:\/\//i.test(assetPath)) {
+export function assetUrl(assetPath) {
+  if (!assetPath || assetPath.startsWith('data:') || assetPath.startsWith('blob:') || assetPath.startsWith('http')) {
     return assetPath;
   }
-  return `${apiOrigin}${assetPath.startsWith('/') ? assetPath : `/${assetPath}`}`;
+
+  if (configuredApiUrl) {
+    return `${configuredApiUrl}${assetPath}`;
+  }
+
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.protocol}//${window.location.hostname}:5000${assetPath}`;
+  }
+
+  return assetPath;
 }
 
 export const api = axios.create({
