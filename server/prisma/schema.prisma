@@ -49,6 +49,7 @@ enum AnalyticType {
 enum DocumentStatus {
   DRAFT
   CONFIRMED
+  PARTIALLY_PAID
   PAID
   CANCELLED
 }
@@ -69,73 +70,73 @@ model User {
 }
 
 model Contact {
-  id             String          @id @default(cuid())
-  name           String
-  type           ContactType
-  email          String?
-  mobile         String?
-  address        String?
-  city           String?
-  state          String?
-  pincode        String?
-  profileImage   String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  salesOrders    SalesOrder[]
-  salesInvoices  SalesInvoice[]
-  purchaseOrders PurchaseOrder[]
-  vendorBills    VendorBill[]
-  customerPayments Payment[] @relation("CustomerPayments")
-  vendorPayments Payment[] @relation("VendorPayments")
+  id               String          @id @default(cuid())
+  name             String
+  type             ContactType
+  email            String?
+  mobile           String?
+  address          String?
+  city             String?
+  state            String?
+  pincode          String?
+  profileImage     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  salesOrders      SalesOrder[]
+  salesInvoices    SalesInvoice[]
+  purchaseOrders   PurchaseOrder[]
+  vendorBills      VendorBill[]
+  customerPayments Payment[]       @relation("CustomerPayments")
+  vendorPayments   Payment[]       @relation("VendorPayments")
 }
 
 model Product {
-  id             String            @id @default(cuid())
-  name           String
-  type           ProductType
-  category       String?
-  salesPrice     Decimal           @db.Decimal(12, 2)
-  purchasePrice  Decimal           @db.Decimal(12, 2)
-  stockQuantity  Decimal           @default(0) @db.Decimal(12, 2)
-  taxRate        Decimal           @default(0) @db.Decimal(5, 2)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  salesOrderItems SalesOrderItem[]
+  id                 String              @id @default(cuid())
+  name               String
+  type               ProductType
+  category           String?
+  salesPrice         Decimal             @db.Decimal(12, 2)
+  purchasePrice      Decimal             @db.Decimal(12, 2)
+  stockQuantity      Decimal             @default(0) @db.Decimal(12, 2)
+  taxRate            Decimal             @default(0) @db.Decimal(5, 2)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  salesOrderItems    SalesOrderItem[]
   purchaseOrderItems PurchaseOrderItem[]
 }
 
 model Account {
-  id            String        @id @default(cuid())
-  name          String
-  type          AccountType
-  openingBalance Decimal      @default(0) @db.Decimal(12, 2)
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  journalItems  JournalItem[]
-  debitJournals Journal[]     @relation("DefaultDebitAccount")
-  creditJournals Journal[]    @relation("DefaultCreditAccount")
+  id             String        @id @default(cuid())
+  name           String
+  type           AccountType
+  openingBalance Decimal       @default(0) @db.Decimal(12, 2)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  journalItems   JournalItem[]
+  debitJournals  Journal[]     @relation("DefaultDebitAccount")
+  creditJournals Journal[]     @relation("DefaultCreditAccount")
 }
 
 model Journal {
-  id                   String        @id @default(cuid())
-  name                 String
-  type                 JournalType
+  id                     String         @id @default(cuid())
+  name                   String
+  type                   JournalType
   defaultDebitAccountId  String?
   defaultCreditAccountId String?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  defaultDebitAccount  Account?      @relation("DefaultDebitAccount", fields: [defaultDebitAccountId], references: [id], onDelete: SetNull)
-  defaultCreditAccount Account?      @relation("DefaultCreditAccount", fields: [defaultCreditAccountId], references: [id], onDelete: SetNull)
-  entries              JournalEntry[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  defaultDebitAccount    Account?       @relation("DefaultDebitAccount", fields: [defaultDebitAccountId], references: [id], onDelete: SetNull)
+  defaultCreditAccount   Account?       @relation("DefaultCreditAccount", fields: [defaultCreditAccountId], references: [id], onDelete: SetNull)
+  entries                JournalEntry[]
 }
 
 model AnalyticAccount {
-  id        String        @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String
   type      AnalyticType
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   budgets   Budget[]
 }
 
@@ -169,33 +170,33 @@ model SalesOrder {
 }
 
 model SalesOrderItem {
-  id          String     @id @default(cuid())
+  id           String     @id @default(cuid())
   salesOrderId String
-  productId   String
-  quantity    Decimal    @db.Decimal(12, 2)
-  unitPrice   Decimal    @db.Decimal(12, 2)
-  taxRate     Decimal    @db.Decimal(5, 2)
-  total       Decimal    @db.Decimal(12, 2)
-  salesOrder  SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  product     Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId    String
+  quantity     Decimal    @db.Decimal(12, 2)
+  unitPrice    Decimal    @db.Decimal(12, 2)
+  taxRate      Decimal    @db.Decimal(5, 2)
+  total        Decimal    @db.Decimal(12, 2)
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
 }
 
 model SalesInvoice {
-  id            String         @id @default(cuid())
-  invoiceNumber String         @unique
-  salesOrderId  String         @unique
-  customerId    String
-  invoiceDate   DateTime
-  dueDate       DateTime?
-  subtotal      Decimal        @db.Decimal(12, 2)
-  tax           Decimal        @db.Decimal(12, 2)
-  total         Decimal        @db.Decimal(12, 2)
-  status        DocumentStatus @default(DRAFT)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  salesOrder    SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  customer      Contact        @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  payments      Payment[]
+  id                 String              @id @default(cuid())
+  invoiceNumber      String              @unique
+  salesOrderId       String              @unique
+  customerId         String
+  invoiceDate        DateTime
+  dueDate            DateTime?
+  subtotal           Decimal             @db.Decimal(12, 2)
+  tax                Decimal             @db.Decimal(12, 2)
+  total              Decimal             @db.Decimal(12, 2)
+  status             DocumentStatus      @default(DRAFT)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  salesOrder         SalesOrder          @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  customer           Contact             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  paymentAllocations PaymentAllocation[]
 }
 
 model PurchaseOrder {
@@ -215,49 +216,61 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id             String        @id @default(cuid())
+  id              String        @id @default(cuid())
   purchaseOrderId String
-  productId      String
-  quantity       Decimal       @db.Decimal(12, 2)
-  unitPrice      Decimal       @db.Decimal(12, 2)
-  taxRate        Decimal       @db.Decimal(5, 2)
-  total          Decimal       @db.Decimal(12, 2)
-  purchaseOrder  PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  product        Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId       String
+  quantity        Decimal       @db.Decimal(12, 2)
+  unitPrice       Decimal       @db.Decimal(12, 2)
+  taxRate         Decimal       @db.Decimal(5, 2)
+  total           Decimal       @db.Decimal(12, 2)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
 }
 
 model VendorBill {
-  id            String         @id @default(cuid())
-  billNumber    String         @unique
-  purchaseOrderId String        @unique
-  vendorId      String
-  invoiceDate   DateTime
-  dueDate       DateTime?
-  subtotal      Decimal        @db.Decimal(12, 2)
-  tax           Decimal        @db.Decimal(12, 2)
-  total         Decimal        @db.Decimal(12, 2)
-  status        DocumentStatus @default(DRAFT)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  purchaseOrder PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  vendor        Contact        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
-  payments      Payment[]
+  id                 String              @id @default(cuid())
+  billNumber         String              @unique
+  purchaseOrderId    String              @unique
+  vendorId           String
+  invoiceDate        DateTime
+  dueDate            DateTime?
+  subtotal           Decimal             @db.Decimal(12, 2)
+  tax                Decimal             @db.Decimal(12, 2)
+  total              Decimal             @db.Decimal(12, 2)
+  status             DocumentStatus      @default(DRAFT)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  purchaseOrder      PurchaseOrder       @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  vendor             Contact             @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  paymentAllocations PaymentAllocation[]
 }
 
 model Payment {
-  id             String         @id @default(cuid())
-  amount         Decimal        @db.Decimal(12, 2)
-  paymentDate    DateTime
-  method         PaymentMethod
-  customerId     String?
-  vendorId       String?
+  id          String              @id @default(cuid())
+  amount      Decimal             @db.Decimal(12, 2)
+  paymentDate DateTime
+  method      PaymentMethod
+  customerId  String?
+  vendorId    String?
+  createdAt   DateTime            @default(now())
+  customer    Contact?            @relation("CustomerPayments", fields: [customerId], references: [id], onDelete: SetNull)
+  vendor      Contact?            @relation("VendorPayments", fields: [vendorId], references: [id], onDelete: SetNull)
+  allocations PaymentAllocation[]
+}
+
+model PaymentAllocation {
+  id             String        @id @default(cuid())
+  paymentId      String
+  amount         Decimal       @db.Decimal(12, 2)
   salesInvoiceId String?
   vendorBillId   String?
-  createdAt      DateTime       @default(now())
-  customer       Contact?       @relation("CustomerPayments", fields: [customerId], references: [id], onDelete: SetNull)
-  vendor         Contact?       @relation("VendorPayments", fields: [vendorId], references: [id], onDelete: SetNull)
-  salesInvoice   SalesInvoice?  @relation(fields: [salesInvoiceId], references: [id], onDelete: SetNull)
-  vendorBill     VendorBill?    @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  payment        Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  salesInvoice   SalesInvoice? @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
+  vendorBill     VendorBill?   @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+
+  @@index([salesInvoiceId])
+  @@index([vendorBillId])
 }
 
 model JournalEntry {
@@ -272,11 +285,11 @@ model JournalEntry {
 }
 
 model JournalItem {
-  id            String       @id @default(cuid())
+  id             String       @id @default(cuid())
   journalEntryId String
-  accountId     String
-  debit         Decimal      @default(0) @db.Decimal(12, 2)
-  credit        Decimal      @default(0) @db.Decimal(12, 2)
-  journalEntry  JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  account       Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  accountId      String
+  debit          Decimal      @default(0) @db.Decimal(12, 2)
+  credit         Decimal      @default(0) @db.Decimal(12, 2)
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
 }
