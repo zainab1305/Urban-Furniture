@@ -19,6 +19,7 @@ import { BudgetsPage } from '../pages/budgets/BudgetsPage.jsx';
 import { BudgetReportPage } from '../pages/reports/BudgetReportPage.jsx';
 import { PortalRecordsPage } from '../pages/portal/PortalRecordsPage.jsx';
 import { PortalPaymentsPage } from '../pages/portal/PortalPaymentsPage.jsx';
+import { PaymentsPage } from '../pages/payments/PaymentsPage.jsx';
 import { PurchasesPage } from '../pages/purchases/PurchasesPage.jsx';
 import { SalesPage } from '../pages/sales/SalesPage.jsx';
 
@@ -139,6 +140,7 @@ export function AppRoutes() {
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/purchases/orders" element={<PurchasesPage section="orders" />} />
             <Route path="/purchases/bills" element={<PurchasesPage section="bills" />} />
+            <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/sales" element={<SalesPage />} />
             <Route path="/sales/orders" element={<SalesPage section="orders" />} />
             <Route path="/sales/invoices" element={<SalesPage section="invoices" />} />
@@ -151,7 +153,7 @@ export function AppRoutes() {
             <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
           <Route element={<AccountingOnlyRoute />}>
-            {routes.filter(([path]) => !['/analytic-accounts', '/budgets', '/reports/budget', '/sales', '/sales/orders', '/sales/invoices'].includes(path)).map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
+            {routes.filter(([path]) => !['/analytic-accounts', '/budgets', '/reports/budget', '/sales', '/sales/orders', '/sales/invoices', '/payments'].includes(path)).map(([path, title, description]) => <Route key={path} path={path} element={<PlaceholderPage title={title} description={description} />} />)}
           </Route>
         </Route>
       </Route>

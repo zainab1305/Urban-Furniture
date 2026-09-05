@@ -4,6 +4,7 @@ import { contactImageUpload, productImageUpload } from '../middleware/contactUpl
 import { archiveAccount, archiveContact, archiveProduct, createAccount, createContact, createProduct, listAccounts, listContacts, listProducts, updateAccount, updateContact, updateProduct } from '../controllers/resourceController.js';
 import { archiveJournal, createJournal, createJournalEntry, getJournalEntry, listJournalEntries, listJournals, postJournalEntry, updateJournal } from '../controllers/journalController.js';
 import { createAnalyticAccount, createBudget, deleteAnalyticAccount, listAnalyticAccounts, listBudgets, updateAnalyticAccount, updateBudget, updateBudgetStatus } from '../controllers/planningController.js';
+import { listPaymentTargets, registerPayment } from '../controllers/paymentController.js';
 
 const resources = ['contacts', 'products', 'accounts', 'journals', 'analytic-accounts', 'budgets', 'sales', 'purchases', 'payments', 'journal-entries', 'reports'];
 export const resourceRoutes = Router();
@@ -31,7 +32,10 @@ resourceRoutes.get('/journal-entries', listJournalEntries);
 resourceRoutes.get('/journal-entries/:id', getJournalEntry);
 resourceRoutes.post('/journal-entries', createJournalEntry);
 resourceRoutes.post('/journal-entries/:id/post', postJournalEntry);
-resourceRoutes.use(['/analytic-accounts', '/budgets', '/sales', '/purchases', '/payments', '/reports'], authorize('ADMIN', 'ACCOUNTANT'));
+resourceRoutes.use('/payments', authorize('ADMIN', 'ACCOUNTANT'));
+resourceRoutes.get('/payments', listPaymentTargets);
+resourceRoutes.post('/payments', registerPayment);
+resourceRoutes.use(['/analytic-accounts', '/budgets', '/sales', '/purchases', '/reports'], authorize('ADMIN', 'ACCOUNTANT'));
 resourceRoutes.get('/analytic-accounts', listAnalyticAccounts);
 resourceRoutes.post('/analytic-accounts', createAnalyticAccount);
 resourceRoutes.patch('/analytic-accounts/:id', updateAnalyticAccount);

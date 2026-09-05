@@ -7,6 +7,7 @@ import './index.css';
 import './admin.css';
 import './journals.css';
 import './purchases.css';
+import './payments.css';
 import './planning.css';
 import './sales.css';
 
