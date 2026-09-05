@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
@@ -7,10 +8,15 @@ import { authRoutes } from './routes/authRoutes.js';
 import { resourceRoutes } from './routes/resourceRoutes.js';
 
 export const app = express();
-app.use(cors({ origin: env.clientUrls }));
+app.use(cors({ origin: env.clientUrls, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 app.use(morgan('dev'));
-app.get('/api/health', (_request, response) => response.json({ success: true, message: 'Urban Furniture API is running' }));
+
+app.get('/api/health', (_request, response) =>
+  response.json({ success: true, message: 'Urban Furniture API is running' })
+);
+
 app.use('/api/auth', authRoutes);
 app.use('/api', resourceRoutes);
 app.use(errorHandler);

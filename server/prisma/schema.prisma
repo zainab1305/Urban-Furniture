@@ -89,7 +89,7 @@ enum StockMovementType {
 
 model User {
   id           String   @id @default(cuid())
-  loginId String @unique
+  loginId      String   @unique
   name         String
   email        String   @unique
   passwordHash String

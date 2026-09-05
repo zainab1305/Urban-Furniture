@@ -1,10 +1,35 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   await prisma.$connect();
-  console.log('Database schema is ready. No business data was seeded.');
+
+  const adminPasswordHash = await bcrypt.hash('Urban@1234', 12);
+
+  const admin = await prisma.user.upsert({
+    where: { loginId: 'admin01' },
+    update: {
+      passwordHash: adminPasswordHash
+    },
+    create: {
+      loginId: 'admin01',
+      name: 'Nisha Shah',
+      email: 'admin@urbanfurniture.local',
+      passwordHash: adminPasswordHash,
+      role: 'ADMIN'
+    }
+  });
+
+  console.log(`Database seeded successfully. Admin user ready: ${admin.loginId} (${admin.email})`);
 }
 
-main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());
+main()
+  .catch(error => {
+    console.error('Seed error:', error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
