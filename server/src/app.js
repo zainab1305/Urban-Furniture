@@ -7,7 +7,7 @@ import { authRoutes } from './routes/authRoutes.js';
 import { resourceRoutes } from './routes/resourceRoutes.js';
 
 export const app = express();
-app.use(cors({ origin: env.clientUrl }));
+app.use(cors({ origin: env.clientUrls }));
 app.use(express.json());
 app.use(morgan('dev'));
 app.get('/api/health', (_request, response) => response.json({ success: true, message: 'Urban Furniture API is running' }));
