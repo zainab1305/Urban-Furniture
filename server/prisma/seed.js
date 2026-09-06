@@ -83,17 +83,25 @@ async function main() {
     ['Kavya Narang', 'CUSTOMER', 'kavya.narang@homelore.in', '+91 98107 12049', '32 Civil Lines', 'Jaipur', 'Rajasthan', '302006'],
     ['Aarushi Rao', 'VENDOR', 'aarushi.rao@artisanroute.in', '+91 99200 12050', '25 Andheri East', 'Mumbai', 'Maharashtra', '400069']
   ];
+  const contactPassword = 'Contact@1234';
+  const contactPasswordHash = await bcrypt.hash(contactPassword, 12);
 
   for (const [index, [name, type, email, mobile, address, city, state, pincode]] of contacts.entries()) {
     const data = { name, type, email, mobile, address, city, state, pincode, profileImage: `https://i.pravatar.cc/300?img=${(index % 70) + 1}`, isActive: true };
     const existingContact = await prisma.contact.findFirst({ where: { email } });
-    if (existingContact) {
-      await prisma.contact.update({ where: { id: existingContact.id }, data });
+    const contact = existingContact
+      ? await prisma.contact.update({ where: { id: existingContact.id }, data })
+      : await prisma.contact.create({ data });
+    const loginId = `contact${String(index + 1).padStart(3, '0')}`;
+    const existingUser = await prisma.user.findFirst({ where: { OR: [{ contactId: contact.id }, { email }, { loginId }] } });
+    if (existingUser) {
+      await prisma.user.update({ where: { id: existingUser.id }, data: { loginId, name, email, passwordHash: contactPasswordHash, role: 'CONTACT', contactId: contact.id, isActive: true } });
     } else {
-      await prisma.contact.create({ data });
+      await prisma.user.create({ data: { loginId, name, email, passwordHash: contactPasswordHash, role: 'CONTACT', contactId: contact.id } });
     }
   }
   console.log(`Contact directory ready: ${contacts.length} contacts`);
+  console.log(`Portal users ready: ${contacts.length} contacts share password ${contactPassword}`);
 
   const productCategories = ['Living Room', 'Bedroom', 'Dining', 'Office', 'Outdoor', 'Lighting & Decor'];
   const categoryRecords = {};
