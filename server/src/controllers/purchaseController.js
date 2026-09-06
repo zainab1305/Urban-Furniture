@@ -63,7 +63,14 @@ export async function createPurchaseOrder(request, response) {
   const vendor = await prisma.contact.findFirst({ where: { id: vendorId, type: { in: ['VENDOR', 'BOTH'] }, isActive: true } });
   if (!vendor) return response.status(400).json({ success: false, message: 'Select an active vendor contact.' });
   const totals = totalsFor(items);
-  const order = await prisma.$transaction(transaction => transaction.purchaseOrder.create({ data: { orderNumber: numberFor('PO'), vendorId, orderDate: orderDate ? new Date(orderDate) : new Date(), status: 'CONFIRMED', subtotal: totals.subtotal, tax: totals.tax, total: totals.total, notes: notes?.trim() || null, createdById: request.user.id, items: { create: items.map(item => ({ productId: item.productId, quantity: n(item.quantity), unitPrice: n(item.unitPrice), taxRate: n(item.taxRate), total: n(item.quantity) * n(item.unitPrice) * (1 + n(item.taxRate) / 100) })) } }, include: { vendor: true, items: { include: { product: true } } } }));
+  const order = await prisma.$transaction(async transaction => {
+    const created = await transaction.purchaseOrder.create({ data: { orderNumber: numberFor('PO'), vendorId, orderDate: orderDate ? new Date(orderDate) : new Date(), status: 'CONFIRMED', subtotal: totals.subtotal, tax: totals.tax, total: totals.total, notes: notes?.trim() || null, createdById: request.user.id, items: { create: items.map(item => ({ productId: item.productId, quantity: n(item.quantity), unitPrice: n(item.unitPrice), taxRate: n(item.taxRate), total: n(item.quantity) * n(item.unitPrice) * (1 + n(item.taxRate) / 100) })) } }, include: { vendor: true, items: { include: { product: true } } } });
+    for (const item of created.items) {
+      await transaction.product.update({ where: { id: item.productId }, data: { stockQuantity: { increment: item.quantity } } });
+      await transaction.stockMovement.create({ data: { productId: item.productId, type: 'PURCHASE', quantity: item.quantity, reference: created.orderNumber, notes: `Purchase from ${vendor.name}`, createdById: request.user.id } });
+    }
+    return created;
+  });
   response.status(201).json({ success: true, data: order, message: 'Purchase order created.' });
 }
 

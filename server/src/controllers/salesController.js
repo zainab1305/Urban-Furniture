@@ -39,7 +39,23 @@ export async function createSalesOrder(request, response) {
 }
 
 export async function confirmSalesOrder(request, response) {
-  const order = await prisma.salesOrder.update({ where: { id: request.params.id }, data: { status: 'CONFIRMED' }, include: { customer: true, items: { include: { product: true } }, invoice: true } });
+  const order = await prisma.$transaction(async transaction => {
+    const current = await transaction.salesOrder.findUnique({ where: { id: request.params.id }, include: { customer: true, items: { include: { product: true } }, invoice: true } });
+    if (!current) throw Object.assign(new Error('Sales order not found.'), { statusCode: 404 });
+    if (current.status !== 'DRAFT') throw Object.assign(new Error('Only draft sales orders can be confirmed.'), { statusCode: 400 });
+    const requestedByProduct = new Map();
+    for (const item of current.items) requestedByProduct.set(item.productId, (requestedByProduct.get(item.productId) || 0) + item.quantity);
+    for (const item of current.items) {
+      const requested = requestedByProduct.get(item.productId);
+      if (numberValue(item.product.stockQuantity) < requested) throw Object.assign(new Error(`Insufficient stock for ${item.product.name}. Available: ${item.product.stockQuantity}.`), { statusCode: 400 });
+    }
+    const confirmed = await transaction.salesOrder.update({ where: { id: current.id }, data: { status: 'CONFIRMED' }, include: { customer: true, items: { include: { product: true } }, invoice: true } });
+    for (const item of confirmed.items) {
+      await transaction.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } });
+      await transaction.stockMovement.create({ data: { productId: item.productId, type: 'SALE', quantity: item.quantity, reference: confirmed.orderNumber, notes: `Sale to ${confirmed.customer.name}`, createdById: request.user.id } });
+    }
+    return confirmed;
+  });
   response.json({ success: true, data: order, message: 'Sales order confirmed.' });
 }
 
