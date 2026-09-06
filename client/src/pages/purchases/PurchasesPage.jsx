@@ -4,34 +4,789 @@ import { PageHeader } from '../../components/ui/PageHeader.jsx';
 import { api } from '../../services/api.js';
 import { printDocument } from '../../utils/printDocument.js';
 
-const money = value => `₹${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-const blankItem = { productId: '', quantity: 1, unitPrice: '', taxRate: 0 };
-const blankOrder = { vendorId: '', orderDate: new Date().toISOString().slice(0, 10), notes: '', items: [{ ...blankItem }] };
-const statusTone = status => status === 'PAID' ? 'active' : status === 'PARTIALLY_PAID' ? 'warning' : '';
+const money = value =>
+  `₹${Number(value || 0).toLocaleString('en-IN', {
+    maximumFractionDigits: 2
+  })}`;
+
+const blankItem = {
+  productId: '',
+  quantity: 1,
+  unitPrice: '',
+  taxRate: 0,
+  total: 0
+};
+
+const blankOrder = {
+  vendorId: '',
+  orderDate: new Date().toISOString().slice(0, 10),
+  notes: '',
+  items: [{ ...blankItem }]
+};
+
+const statusTone = status =>
+  status === 'PAID'
+    ? 'active'
+    : status === 'PARTIALLY_PAID'
+      ? 'warning'
+      : '';
 
 function printInvoice(bill) {
-  return printDocument({ kind: 'Vendor Invoice', number: bill.billNumber, partyLabel: 'Vendor', partyName: bill.vendor.name, date: new Date(bill.invoiceDate).toLocaleDateString('en-IN'), dueDate: bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('en-IN') : '', lines: bill.purchaseOrder.items.map(item => ({ product: item.product.name, quantity: item.quantity, unitPrice: item.unitPrice, total: item.total })), subtotal: bill.subtotal, tax: bill.tax, total: bill.total, paid: bill.paid, status: bill.status });
+  return printDocument({
+    kind: 'Vendor Invoice',
+    number: bill.billNumber,
+    partyLabel: 'Vendor',
+    partyName: bill.vendor.name,
+    date: new Date(bill.invoiceDate).toLocaleDateString('en-IN'),
+    dueDate: bill.dueDate
+      ? new Date(bill.dueDate).toLocaleDateString('en-IN')
+      : '',
+    lines: bill.purchaseOrder.items.map(item => ({
+      product: item.product.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.total
+    })),
+    subtotal: bill.subtotal,
+    tax: bill.tax,
+    total: bill.total,
+    paid: bill.paid,
+    status: bill.status
+  });
 }
 
 function BillAction({ bill, onPay }) {
-  const isPaid = bill.status === 'PAID' || Number(bill.outstanding || 0) <= 0;
-  return isPaid
-    ? <button className="compact-button print-button" onClick={() => printInvoice(bill)} title="Print invoice"><Printer size={13} /> Print</button>
-    : <button className="compact-button primary-button" onClick={() => onPay(bill)}>Pay</button>;
+  const isPaid =
+    bill.status === 'PAID' || Number(bill.outstanding || 0) <= 0;
+
+  return isPaid ? (
+    <button
+      className="compact-button print-button"
+      onClick={() => printInvoice(bill)}
+      title="Print invoice"
+    >
+      <Printer size={13} /> Print
+    </button>
+  ) : (
+    <button
+      className="compact-button primary-button"
+      onClick={() => onPay(bill)}
+    >
+      Pay
+    </button>
+  );
 }
 
 export function PurchasesPage({ section = 'orders' }) {
   const isBills = section === 'bills';
-  const [orders, setOrders] = useState([]); const [bills, setBills] = useState([]); const [vendors, setVendors] = useState([]); const [products, setProducts] = useState([]); const [form, setForm] = useState(blankOrder); const [modal, setModal] = useState(null); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
-  const load = async () => { setLoading(true); setError(''); try { const [ordersResponse, billsResponse, vendorsResponse, productsResponse] = await Promise.all([api.get('/purchases/orders'), api.get('/purchases/bills'), api.get('/contacts', { params: { type: 'VENDOR', status: 'ACTIVE' } }), api.get('/products', { params: { status: 'ACTIVE' } })]); setOrders(ordersResponse.data.data); setBills(billsResponse.data.data); setVendors(vendorsResponse.data.data); setProducts(productsResponse.data.data); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to load purchase records.'); } finally { setLoading(false); } };
-  useEffect(() => { load(); }, []);
-  const openOrder = () => { setForm({ ...blankOrder, vendorId: vendors[0]?.id || '', items: [{ ...blankItem, productId: products[0]?.id || '', unitPrice: products[0]?.purchasePrice || '' }] }); setModal({ type: 'order' }); };
-  const openBill = order => { setForm({ invoiceDate: new Date().toISOString().slice(0, 10), dueDate: new Date().toISOString().slice(0, 10), notes: '' }); setModal({ type: 'bill', order }); };
-  const openPayment = bill => { setForm({ amount: bill.outstanding, method: 'BANK', paymentDate: new Date().toISOString().slice(0, 10), reference: '', notes: '' }); setModal({ type: 'payment', bill }); };
-  const updateItem = (index, field, value) => setForm(current => ({ ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: field === 'quantity' ? Math.max(1, Math.round(Number(value) || 1)) : value } : item) }));
-  const submit = async event => { event.preventDefault(); setSaving(true); try { if (modal.type === 'order') await api.post('/purchases/orders', form); else if (modal.type === 'bill') await api.post(`/purchases/orders/${modal.order.id}/bill`, form); else await api.post(`/purchases/bills/${modal.bill.id}/payment`, form); setModal(null); setNotice(modal.type === 'payment' ? 'Payment recorded.' : modal.type === 'bill' ? 'Vendor bill created.' : 'Purchase order created.'); await load(); } catch (requestError) { setError(requestError.response?.data?.message || 'Unable to save purchase record.'); } finally { setSaving(false); } };
-  return <><PageHeader eyebrow={`PURCHASES / ${isBills ? 'VENDOR BILLS' : 'PURCHASE ORDERS'}`} title={isBills ? 'Vendor bills' : 'Purchase orders'} description={isBills ? 'Convert received purchase orders into bills and pay vendors.' : 'Create purchase orders for vendors and convert them into payable bills.'} action={!isBills && <button className="primary-button" onClick={openOrder}><Plus size={16} /> New purchase order</button>} />{notice && <div className="auth-alert success">{notice}<button onClick={() => setNotice('')}><X size={14} /></button></div>}{error && <div className="auth-alert error">{error}</div>}<div className="purchase-tabs"><a className={!isBills ? 'active' : ''} href="/purchases/orders">Purchase orders</a><a className={isBills ? 'active' : ''} href="/purchases/bills">Vendor bills</a></div><section className="surface users-card">{loading ? <div className="empty-table">Loading purchase records...</div> : isBills ? <BillsTable bills={bills} onPay={openPayment} /> : <OrdersTable orders={orders} onBill={openBill} />}</section>{modal && <div className="modal-backdrop"><section className="modal payment-modal"><button className="modal-close" onClick={() => setModal(null)}><X size={17} /></button><div className="eyebrow">PURCHASES / {modal.type.toUpperCase()}</div><h2>{modal.type === 'payment' ? 'Pay vendor bill' : modal.type === 'bill' ? 'Convert to vendor bill' : 'New purchase order'}</h2>{modal.type === 'payment' && <p>{modal.bill.billNumber} · Outstanding {money(modal.bill.outstanding)}</p>}<form onSubmit={submit}>{modal.type === 'payment' ? <><label>Amount<input type="number" min="1" max={modal.bill.outstanding} step="1" value={form.amount} onChange={event => setForm({ ...form, amount: event.target.value })} required /></label><label>Payment method<select value={form.method} onChange={event => setForm({ ...form, method: event.target.value })}><option value="BANK">Bank</option><option value="CASH">Cash</option></select></label><label>Payment date<input type="date" value={form.paymentDate} onChange={event => setForm({ ...form, paymentDate: event.target.value })} required /></label><label>Reference<input value={form.reference} onChange={event => setForm({ ...form, reference: event.target.value })} /></label><div className="payment-choice"><Banknote size={18} /><span>Payment is linked to this vendor bill.</span></div></> : modal.type === 'bill' ? <><label>Invoice date<input type="date" value={form.invoiceDate} onChange={event => setForm({ ...form, invoiceDate: event.target.value })} required /></label><label>Due date<input type="date" value={form.dueDate} onChange={event => setForm({ ...form, dueDate: event.target.value })} required /></label><label>Notes<input value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })} /></label><div className="payment-choice"><FileText size={18} /><span>The bill inherits its order lines and totals.</span></div></> : <><label>Vendor<select value={form.vendorId} onChange={event => setForm({ ...form, vendorId: event.target.value })} required><option value="">Select vendor</option>{vendors.map(vendor => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label><label>Order date<input type="date" value={form.orderDate} onChange={event => setForm({ ...form, orderDate: event.target.value })} required /></label>{form.items.map((item, index) => <div className="purchase-item-row" key={index}><select value={item.productId} onChange={event => updateItem(index, 'productId', event.target.value)} required><option value="">Select product</option>{products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}</select><input type="number" min="1" step="1" value={item.quantity} onChange={event => updateItem(index, 'quantity', event.target.value)} required /><input type="number" min="0" value={item.unitPrice} onChange={event => updateItem(index, 'unitPrice', event.target.value)} required /></div>)}</>}<div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(null)}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving...' : modal.type === 'payment' ? 'Confirm payment' : modal.type === 'bill' ? 'Create vendor bill' : 'Create purchase order'}</button></div></form></section></div>}</>;
+
+  const [orders, setOrders] = useState([]);
+  const [bills, setBills] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [form, setForm] = useState(blankOrder);
+  const [modal, setModal] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const [
+        ordersResponse,
+        billsResponse,
+        vendorsResponse,
+        productsResponse
+      ] = await Promise.all([
+        api.get('/purchases/orders'),
+        api.get('/purchases/bills'),
+        api.get('/contacts', {
+          params: {
+            type: 'VENDOR',
+            status: 'ACTIVE'
+          }
+        }),
+        api.get('/products', {
+          params: {
+            status: 'ACTIVE'
+          }
+        })
+      ]);
+
+      setOrders(ordersResponse.data.data);
+      setBills(billsResponse.data.data);
+      setVendors(vendorsResponse.data.data);
+      setProducts(productsResponse.data.data);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          'Unable to load purchase records.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const openOrder = () => {
+    const firstProduct = products[0];
+
+    setForm({
+      ...blankOrder,
+      vendorId: vendors[0]?.id || '',
+      items: [
+        {
+          ...blankItem,
+          productId: firstProduct?.id || '',
+          unitPrice: firstProduct?.purchasePrice || '',
+          total: firstProduct?.purchasePrice
+            ? Number(firstProduct.purchasePrice) * 1
+            : 0
+        }
+      ]
+    });
+
+    setModal({ type: 'order' });
+  };
+
+  const openBill = order => {
+    setForm({
+      invoiceDate: new Date().toISOString().slice(0, 10),
+      dueDate: new Date().toISOString().slice(0, 10),
+      notes: ''
+    });
+
+    setModal({
+      type: 'bill',
+      order
+    });
+  };
+
+  const openPayment = bill => {
+    setForm({
+      amount: bill.outstanding,
+      method: 'BANK',
+      paymentDate: new Date().toISOString().slice(0, 10),
+      reference: '',
+      notes: ''
+    });
+
+    setModal({
+      type: 'payment',
+      bill
+    });
+  };
+
+  const updateItem = (index, field, value) => {
+    setForm(current => ({
+      ...current,
+      items: current.items.map((item, itemIndex) => {
+        if (itemIndex !== index) {
+          return item;
+        }
+
+        if (field === 'productId') {
+          const product = products.find(
+            product => String(product.id) === String(value)
+          );
+
+          const unitPrice = Number(product?.purchasePrice || 0);
+          const quantity = Number(item.quantity || 1);
+          const total = unitPrice * quantity;
+
+          return {
+            ...item,
+            productId: value,
+            unitPrice,
+            total
+          };
+        }
+
+        if (field === 'quantity') {
+          const quantity = Math.max(
+            1,
+            Math.round(Number(value) || 1)
+          );
+
+          const unitPrice = Number(item.unitPrice || 0);
+          const total = unitPrice * quantity;
+
+          return {
+            ...item,
+            quantity,
+            total
+          };
+        }
+
+        return {
+          ...item,
+          [field]: value
+        };
+      })
+    }));
+  };
+
+  const submit = async event => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      if (modal.type === 'order') {
+        await api.post('/purchases/orders', form);
+      } else if (modal.type === 'bill') {
+        await api.post(
+          `/purchases/orders/${modal.order.id}/bill`,
+          form
+        );
+      } else {
+        await api.post(
+          `/purchases/bills/${modal.bill.id}/payment`,
+          form
+        );
+      }
+
+      setModal(null);
+
+      setNotice(
+        modal.type === 'payment'
+          ? 'Payment recorded.'
+          : modal.type === 'bill'
+            ? 'Vendor bill created.'
+            : 'Purchase order created.'
+      );
+
+      await load();
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          'Unable to save purchase record.'
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <PageHeader
+        eyebrow={`PURCHASES / ${
+          isBills ? 'VENDOR BILLS' : 'PURCHASE ORDERS'
+        }`}
+        title={isBills ? 'Vendor bills' : 'Purchase orders'}
+        description={
+          isBills
+            ? 'Convert received purchase orders into bills and pay vendors.'
+            : 'Create purchase orders for vendors and convert them into payable bills.'
+        }
+        action={
+          !isBills && (
+            <button
+              className="primary-button"
+              onClick={openOrder}
+            >
+              <Plus size={16} /> New purchase order
+            </button>
+          )
+        }
+      />
+
+      {notice && (
+        <div className="auth-alert success">
+          {notice}
+          <button onClick={() => setNotice('')}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div className="auth-alert error">
+          {error}
+        </div>
+      )}
+
+      <div className="purchase-tabs">
+        <a
+          className={!isBills ? 'active' : ''}
+          href="/purchases/orders"
+        >
+          Purchase orders
+        </a>
+
+        <a
+          className={isBills ? 'active' : ''}
+          href="/purchases/bills"
+        >
+          Vendor bills
+        </a>
+      </div>
+
+      <section className="surface users-card">
+        {loading ? (
+          <div className="empty-table">
+            Loading purchase records...
+          </div>
+        ) : isBills ? (
+          <BillsTable
+            bills={bills}
+            onPay={openPayment}
+          />
+        ) : (
+          <OrdersTable
+            orders={orders}
+            onBill={openBill}
+          />
+        )}
+      </section>
+
+      {modal && (
+        <div className="modal-backdrop">
+          <section className="modal payment-modal">
+            <button
+              className="modal-close"
+              onClick={() => setModal(null)}
+            >
+              <X size={17} />
+            </button>
+
+            <div className="eyebrow">
+              PURCHASES / {modal.type.toUpperCase()}
+            </div>
+
+            <h2>
+              {modal.type === 'payment'
+                ? 'Pay vendor bill'
+                : modal.type === 'bill'
+                  ? 'Convert to vendor bill'
+                  : 'New purchase order'}
+            </h2>
+
+            {modal.type === 'payment' && (
+              <p>
+                {modal.bill.billNumber} · Outstanding{' '}
+                {money(modal.bill.outstanding)}
+              </p>
+            )}
+
+            <form onSubmit={submit}>
+              {modal.type === 'payment' ? (
+                <>
+                  <label>
+                    Amount
+                    <input
+                      type="number"
+                      min="1"
+                      max={modal.bill.outstanding}
+                      step="1"
+                      value={form.amount}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          amount: event.target.value
+                        })
+                      }
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Payment method
+                    <select
+                      value={form.method}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          method: event.target.value
+                        })
+                      }
+                    >
+                      <option value="BANK">Bank</option>
+                      <option value="CASH">Cash</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Payment date
+                    <input
+                      type="date"
+                      value={form.paymentDate}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          paymentDate: event.target.value
+                        })
+                      }
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Reference
+                    <input
+                      value={form.reference}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          reference: event.target.value
+                        })
+                      }
+                    />
+                  </label>
+
+                  <div className="payment-choice">
+                    <Banknote size={18} />
+                    <span>
+                      Payment is linked to this vendor bill.
+                    </span>
+                  </div>
+                </>
+              ) : modal.type === 'bill' ? (
+                <>
+                  <label>
+                    Invoice date
+                    <input
+                      type="date"
+                      value={form.invoiceDate}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          invoiceDate: event.target.value
+                        })
+                      }
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Due date
+                    <input
+                      type="date"
+                      value={form.dueDate}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          dueDate: event.target.value
+                        })
+                      }
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Notes
+                    <input
+                      value={form.notes}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          notes: event.target.value
+                        })
+                      }
+                    />
+                  </label>
+
+                  <div className="payment-choice">
+                    <FileText size={18} />
+                    <span>
+                      The bill inherits its order lines and totals.
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label>
+                    Vendor
+                    <select
+                      value={form.vendorId}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          vendorId: event.target.value
+                        })
+                      }
+                      required
+                    >
+                      <option value="">
+                        Select vendor
+                      </option>
+
+                      {vendors.map(vendor => (
+                        <option
+                          key={vendor.id}
+                          value={vendor.id}
+                        >
+                          {vendor.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    Order date
+                    <input
+                      type="date"
+                      value={form.orderDate}
+                      onChange={event =>
+                        setForm({
+                          ...form,
+                          orderDate: event.target.value
+                        })
+                      }
+                      required
+                    />
+                  </label>
+
+                  {form.items.map((item, index) => (
+                    <div
+                      className="purchase-item-row"
+                      key={index}
+                    >
+                      <select
+                        value={item.productId}
+                        onChange={event =>
+                          updateItem(
+                            index,
+                            'productId',
+                            event.target.value
+                          )
+                        }
+                        required
+                      >
+                        <option value="">
+                          Select product
+                        </option>
+
+                        {products.map(product => (
+                          <option
+                            key={product.id}
+                            value={product.id}
+                          >
+                            {product.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={item.quantity}
+                        onChange={event =>
+                          updateItem(
+                            index,
+                            'quantity',
+                            event.target.value
+                          )
+                        }
+                        required
+                      />
+
+                      <input
+                        type="number"
+                        value={item.unitPrice}
+                        readOnly
+                        tabIndex="-1"
+                        aria-label="Unit purchase price"
+                      />
+
+                      <input
+                        type="number"
+                        value={item.total}
+                        readOnly
+                        tabIndex="-1"
+                        aria-label="Total"
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setModal(null)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="primary-button"
+                  disabled={saving}
+                >
+                  {saving
+                    ? 'Saving...'
+                    : modal.type === 'payment'
+                      ? 'Confirm payment'
+                      : modal.type === 'bill'
+                        ? 'Create vendor bill'
+                        : 'Create purchase order'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+    </>
+  );
 }
 
-function OrdersTable({ orders, onBill }) { return orders.length ? <div className="table-wrap"><table><thead><tr><th>ORDER</th><th>VENDOR</th><th>DATE</th><th>TOTAL</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>{orders.map(order => <tr key={order.id}><td><b className="ref">{order.orderNumber}</b></td><td>{order.vendor.name}</td><td>{new Date(order.orderDate).toLocaleDateString('en-IN')}</td><td><b>{money(order.total)}</b></td><td>{order.bill ? 'Billed' : order.status}</td><td>{order.bill ? <span className="table-subtitle">Bill created</span> : <button className="compact-button primary-button" onClick={() => onBill(order)}>Create bill <ArrowRight size={13} /></button>}</td></tr>)}</tbody></table></div> : <div className="empty-table">No purchase orders found.</div>; }
-function BillsTable({ bills, onPay }) { return bills.length ? <div className="table-wrap"><table><thead><tr><th>BILL</th><th>VENDOR</th><th>INVOICE DATE</th><th>DUE DATE</th><th>TOTAL</th><th>OUTSTANDING</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>{bills.map(bill => <tr key={bill.id}><td><b className="ref">{bill.billNumber}</b><small className="table-subtitle">{bill.purchaseOrder.orderNumber}</small></td><td>{bill.vendor.name}</td><td>{new Date(bill.invoiceDate).toLocaleDateString('en-IN')}</td><td>{bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('en-IN') : '—'}</td><td><b>{money(bill.total)}</b></td><td><b>{money(bill.outstanding)}</b></td><td><span className={`status-pill ${statusTone(bill.status)}`}><i />{bill.status}</span></td><td className="sales-actions"><BillAction bill={bill} onPay={onPay} /></td></tr>)}</tbody></table></div> : <div className="empty-table">No vendor bills found.</div>; }
+function OrdersTable({ orders, onBill }) {
+  return orders.length ? (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ORDER</th>
+            <th>VENDOR</th>
+            <th>DATE</th>
+            <th>TOTAL</th>
+            <th>STATUS</th>
+            <th>ACTION</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {orders.map(order => (
+            <tr key={order.id}>
+              <td>
+                <b className="ref">
+                  {order.orderNumber}
+                </b>
+              </td>
+
+              <td>{order.vendor.name}</td>
+
+              <td>
+                {new Date(
+                  order.orderDate
+                ).toLocaleDateString('en-IN')}
+              </td>
+
+              <td>
+                <b>{money(order.total)}</b>
+              </td>
+
+              <td>
+                {order.bill
+                  ? 'Billed'
+                  : order.status}
+              </td>
+
+              <td>
+                {order.bill ? (
+                  <span className="table-subtitle">
+                    Bill created
+                  </span>
+                ) : (
+                  <button
+                    className="compact-button primary-button"
+                    onClick={() => onBill(order)}
+                  >
+                    Create bill{' '}
+                    <ArrowRight size={13} />
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="empty-table">
+      No purchase orders found.
+    </div>
+  );
+}
+
+function BillsTable({ bills, onPay }) {
+  return bills.length ? (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>BILL</th>
+            <th>VENDOR</th>
+            <th>INVOICE DATE</th>
+            <th>DUE DATE</th>
+            <th>TOTAL</th>
+            <th>OUTSTANDING</th>
+            <th>STATUS</th>
+            <th>ACTION</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {bills.map(bill => (
+            <tr key={bill.id}>
+              <td>
+                <b className="ref">
+                  {bill.billNumber}
+                </b>
+
+                <small className="table-subtitle">
+                  {bill.purchaseOrder.orderNumber}
+                </small>
+              </td>
+
+              <td>{bill.vendor.name}</td>
+
+              <td>
+                {new Date(
+                  bill.invoiceDate
+                ).toLocaleDateString('en-IN')}
+              </td>
+
+              <td>
+                {bill.dueDate
+                  ? new Date(
+                      bill.dueDate
+                    ).toLocaleDateString('en-IN')
+                  : '—'}
+              </td>
+
+              <td>
+                <b>{money(bill.total)}</b>
+              </td>
+
+              <td>
+                <b>{money(bill.outstanding)}</b>
+              </td>
+
+              <td>
+                <span
+                  className={`status-pill ${statusTone(
+                    bill.status
+                  )}`}
+                >
+                  <i />
+                  {bill.status}
+                </span>
+              </td>
+
+              <td className="sales-actions">
+                <BillAction
+                  bill={bill}
+                  onPay={onPay}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="empty-table">
+      No vendor bills found.
+    </div>
+  );
+}
