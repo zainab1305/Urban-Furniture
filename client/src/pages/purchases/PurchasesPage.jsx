@@ -1,27 +1,34 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Banknote, FileText, Plus, Printer, X } from 'lucide-react';
+import {
+  ArrowRight,
+  Banknote,
+  FileText,
+  Plus,
+  Printer,
+  X,
+} from 'lucide-react';
+
 import { PageHeader } from '../../components/ui/PageHeader.jsx';
 import { api } from '../../services/api.js';
 import { printDocument } from '../../utils/printDocument.js';
 
 const money = value =>
   `₹${Number(value || 0).toLocaleString('en-IN', {
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   })}`;
 
 const blankItem = {
   productId: '',
   quantity: 1,
-  unitPrice: '',
-  taxRate: 0,
-  total: 0
+  unitPrice: 0,
+  total: 0,
 };
 
 const blankOrder = {
   vendorId: '',
   orderDate: new Date().toISOString().slice(0, 10),
   notes: '',
-  items: [{ ...blankItem }]
+  items: [{ ...blankItem }],
 };
 
 const statusTone = status =>
@@ -45,13 +52,13 @@ function printInvoice(bill) {
       product: item.product.name,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      total: item.total
+      total: item.total,
     })),
     subtotal: bill.subtotal,
     tax: bill.tax,
     total: bill.total,
     paid: bill.paid,
-    status: bill.status
+    status: bill.status,
   });
 }
 
@@ -65,7 +72,8 @@ function BillAction({ bill, onPay }) {
       onClick={() => printInvoice(bill)}
       title="Print invoice"
     >
-      <Printer size={13} /> Print
+      <Printer size={13} />
+      Print
     </button>
   ) : (
     <button
@@ -84,10 +92,13 @@ export function PurchasesPage({ section = 'orders' }) {
   const [bills, setBills] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
+
   const [form, setForm] = useState(blankOrder);
   const [modal, setModal] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -100,21 +111,21 @@ export function PurchasesPage({ section = 'orders' }) {
         ordersResponse,
         billsResponse,
         vendorsResponse,
-        productsResponse
+        productsResponse,
       ] = await Promise.all([
         api.get('/purchases/orders'),
         api.get('/purchases/bills'),
         api.get('/contacts', {
           params: {
             type: 'VENDOR',
-            status: 'ACTIVE'
-          }
+            status: 'ACTIVE',
+          },
         }),
         api.get('/products', {
           params: {
-            status: 'ACTIVE'
-          }
-        })
+            status: 'ACTIVE',
+          },
+        }),
       ]);
 
       setOrders(ordersResponse.data.data);
@@ -145,12 +156,10 @@ export function PurchasesPage({ section = 'orders' }) {
         {
           ...blankItem,
           productId: firstProduct?.id || '',
-          unitPrice: firstProduct?.purchasePrice || '',
-          total: firstProduct?.purchasePrice
-            ? Number(firstProduct.purchasePrice) * 1
-            : 0
-        }
-      ]
+          unitPrice: Number(firstProduct?.purchasePrice || 0),
+          total: Number(firstProduct?.purchasePrice || 0),
+        },
+      ],
     });
 
     setModal({ type: 'order' });
@@ -160,12 +169,12 @@ export function PurchasesPage({ section = 'orders' }) {
     setForm({
       invoiceDate: new Date().toISOString().slice(0, 10),
       dueDate: new Date().toISOString().slice(0, 10),
-      notes: ''
+      notes: '',
     });
 
     setModal({
       type: 'bill',
-      order
+      order,
     });
   };
 
@@ -175,72 +184,151 @@ export function PurchasesPage({ section = 'orders' }) {
       method: 'BANK',
       paymentDate: new Date().toISOString().slice(0, 10),
       reference: '',
-      notes: ''
+      notes: '',
     });
 
     setModal({
       type: 'payment',
-      bill
+      bill,
     });
   };
 
+  /*
+   * Product selection:
+   * Automatically gets purchasePrice from the selected product.
+   *
+   * Quantity:
+   * Automatically recalculates line total.
+   */
   const updateItem = (index, field, value) => {
+    setForm(current => {
+      const updatedItems = [...current.items];
+
+      if (field === 'productId') {
+        const product = products.find(
+          item => String(item.id) === String(value)
+        );
+
+        const unitPrice = Number(product?.purchasePrice || 0);
+        const quantity = Math.max(
+          1,
+          Math.round(Number(updatedItems[index].quantity) || 1)
+        );
+
+        updatedItems[index] = {
+          ...updatedItems[index],
+          productId: value,
+          unitPrice,
+          total: quantity * unitPrice,
+        };
+      }
+
+      if (field === 'quantity') {
+        const quantity = Math.max(
+          1,
+          Math.round(Number(value) || 1)
+        );
+
+        const unitPrice = Number(
+          updatedItems[index].unitPrice || 0
+        );
+
+        updatedItems[index] = {
+          ...updatedItems[index],
+          quantity,
+          total: quantity * unitPrice,
+        };
+      }
+
+      return {
+        ...current,
+        items: updatedItems,
+      };
+    });
+  };
+
+  const addItem = () => {
     setForm(current => ({
       ...current,
-      items: current.items.map((item, itemIndex) => {
-        if (itemIndex !== index) {
-          return item;
-        }
-
-        if (field === 'productId') {
-          const product = products.find(
-            product => String(product.id) === String(value)
-          );
-
-          const unitPrice = Number(product?.purchasePrice || 0);
-          const quantity = Number(item.quantity || 1);
-          const total = unitPrice * quantity;
-
-          return {
-            ...item,
-            productId: value,
-            unitPrice,
-            total
-          };
-        }
-
-        if (field === 'quantity') {
-          const quantity = Math.max(
-            1,
-            Math.round(Number(value) || 1)
-          );
-
-          const unitPrice = Number(item.unitPrice || 0);
-          const total = unitPrice * quantity;
-
-          return {
-            ...item,
-            quantity,
-            total
-          };
-        }
-
-        return {
-          ...item,
-          [field]: value
-        };
-      })
+      items: [
+        ...current.items,
+        {
+          ...blankItem,
+        },
+      ],
     }));
   };
 
+  const removeItem = index => {
+    setForm(current => {
+      if (current.items.length === 1) {
+        return current;
+      }
+
+      return {
+        ...current,
+        items: current.items.filter(
+          (_, itemIndex) => itemIndex !== index
+        ),
+      };
+    });
+  };
+
+  /*
+   * Live order total.
+   * Updates automatically whenever:
+   * - product changes
+   * - quantity changes
+   * - item is added
+   * - item is removed
+   */
+  const purchaseTotal =
+    modal?.type === 'order'
+      ? form.items.reduce(
+          (sum, item) => sum + Number(item.total || 0),
+          0
+        )
+      : 0;
+
   const submit = async event => {
     event.preventDefault();
+
     setSaving(true);
     setError('');
 
     try {
       if (modal.type === 'order') {
-        await api.post('/purchases/orders', form);
+        /*
+         * Recalculate everything before sending.
+         * This prevents stale totals from being submitted.
+         */
+        const items = form.items.map(item => {
+          const product = products.find(
+            productItem =>
+              String(productItem.id) === String(item.productId)
+          );
+
+          const quantity = Math.max(
+            1,
+            Math.round(Number(item.quantity) || 1)
+          );
+
+          const unitPrice = Number(
+            product?.purchasePrice || 0
+          );
+
+          return {
+            productId: item.productId,
+            quantity,
+            unitPrice,
+            total: quantity * unitPrice,
+          };
+        });
+
+        await api.post('/purchases/orders', {
+          ...form,
+          items,
+        });
       } else if (modal.type === 'bill') {
         await api.post(
           `/purchases/orders/${modal.order.id}/bill`,
@@ -280,7 +368,11 @@ export function PurchasesPage({ section = 'orders' }) {
         eyebrow={`PURCHASES / ${
           isBills ? 'VENDOR BILLS' : 'PURCHASE ORDERS'
         }`}
-        title={isBills ? 'Vendor bills' : 'Purchase orders'}
+        title={
+          isBills
+            ? 'Vendor bills'
+            : 'Purchase orders'
+        }
         description={
           isBills
             ? 'Convert received purchase orders into bills and pay vendors.'
@@ -292,7 +384,8 @@ export function PurchasesPage({ section = 'orders' }) {
               className="primary-button"
               onClick={openOrder}
             >
-              <Plus size={16} /> New purchase order
+              <Plus size={16} />
+              New purchase order
             </button>
           )
         }
@@ -301,6 +394,7 @@ export function PurchasesPage({ section = 'orders' }) {
       {notice && (
         <div className="auth-alert success">
           {notice}
+
           <button onClick={() => setNotice('')}>
             <X size={14} />
           </button>
@@ -349,7 +443,13 @@ export function PurchasesPage({ section = 'orders' }) {
 
       {modal && (
         <div className="modal-backdrop">
-          <section className="modal payment-modal">
+          <section
+            className={`modal ${
+              modal.type === 'order'
+                ? 'purchase-modal'
+                : 'payment-modal'
+            }`}
+          >
             <button
               className="modal-close"
               onClick={() => setModal(null)}
@@ -369,6 +469,7 @@ export function PurchasesPage({ section = 'orders' }) {
                   : 'New purchase order'}
             </h2>
 
+            {/* PAYMENT */}
             {modal.type === 'payment' && (
               <p>
                 {modal.bill.billNumber} · Outstanding{' '}
@@ -377,10 +478,12 @@ export function PurchasesPage({ section = 'orders' }) {
             )}
 
             <form onSubmit={submit}>
-              {modal.type === 'payment' ? (
+              {/* ================= PAYMENT FORM ================= */}
+              {modal.type === 'payment' && (
                 <>
                   <label>
                     Amount
+
                     <input
                       type="number"
                       min="1"
@@ -390,7 +493,7 @@ export function PurchasesPage({ section = 'orders' }) {
                       onChange={event =>
                         setForm({
                           ...form,
-                          amount: event.target.value
+                          amount: event.target.value,
                         })
                       }
                       required
@@ -399,29 +502,36 @@ export function PurchasesPage({ section = 'orders' }) {
 
                   <label>
                     Payment method
+
                     <select
                       value={form.method}
                       onChange={event =>
                         setForm({
                           ...form,
-                          method: event.target.value
+                          method: event.target.value,
                         })
                       }
                     >
-                      <option value="BANK">Bank</option>
-                      <option value="CASH">Cash</option>
+                      <option value="BANK">
+                        Bank
+                      </option>
+
+                      <option value="CASH">
+                        Cash
+                      </option>
                     </select>
                   </label>
 
                   <label>
                     Payment date
+
                     <input
                       type="date"
                       value={form.paymentDate}
                       onChange={event =>
                         setForm({
                           ...form,
-                          paymentDate: event.target.value
+                          paymentDate: event.target.value,
                         })
                       }
                       required
@@ -430,12 +540,13 @@ export function PurchasesPage({ section = 'orders' }) {
 
                   <label>
                     Reference
+
                     <input
                       value={form.reference}
                       onChange={event =>
                         setForm({
                           ...form,
-                          reference: event.target.value
+                          reference: event.target.value,
                         })
                       }
                     />
@@ -443,22 +554,28 @@ export function PurchasesPage({ section = 'orders' }) {
 
                   <div className="payment-choice">
                     <Banknote size={18} />
+
                     <span>
-                      Payment is linked to this vendor bill.
+                      Payment is linked to this
+                      vendor bill.
                     </span>
                   </div>
                 </>
-              ) : modal.type === 'bill' ? (
+              )}
+
+              {/* ================= BILL FORM ================= */}
+              {modal.type === 'bill' && (
                 <>
                   <label>
                     Invoice date
+
                     <input
                       type="date"
                       value={form.invoiceDate}
                       onChange={event =>
                         setForm({
                           ...form,
-                          invoiceDate: event.target.value
+                          invoiceDate: event.target.value,
                         })
                       }
                       required
@@ -467,13 +584,14 @@ export function PurchasesPage({ section = 'orders' }) {
 
                   <label>
                     Due date
+
                     <input
                       type="date"
                       value={form.dueDate}
                       onChange={event =>
                         setForm({
                           ...form,
-                          dueDate: event.target.value
+                          dueDate: event.target.value,
                         })
                       }
                       required
@@ -482,12 +600,13 @@ export function PurchasesPage({ section = 'orders' }) {
 
                   <label>
                     Notes
+
                     <input
                       value={form.notes}
                       onChange={event =>
                         setForm({
                           ...form,
-                          notes: event.target.value
+                          notes: event.target.value,
                         })
                       }
                     />
@@ -495,117 +614,165 @@ export function PurchasesPage({ section = 'orders' }) {
 
                   <div className="payment-choice">
                     <FileText size={18} />
+
                     <span>
-                      The bill inherits its order lines and totals.
+                      The bill inherits its order
+                      lines and totals.
                     </span>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* ================= PURCHASE ORDER ================= */}
+              {modal.type === 'order' && (
                 <>
-                  <label>
-                    Vendor
-                    <select
-                      value={form.vendorId}
-                      onChange={event =>
-                        setForm({
-                          ...form,
-                          vendorId: event.target.value
-                        })
-                      }
-                      required
-                    >
-                      <option value="">
-                        Select vendor
-                      </option>
+                  <div className="purchase-form-grid">
+                    <label>
+                      Vendor
 
-                      {vendors.map(vendor => (
-                        <option
-                          key={vendor.id}
-                          value={vendor.id}
-                        >
-                          {vendor.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    Order date
-                    <input
-                      type="date"
-                      value={form.orderDate}
-                      onChange={event =>
-                        setForm({
-                          ...form,
-                          orderDate: event.target.value
-                        })
-                      }
-                      required
-                    />
-                  </label>
-
-                  {form.items.map((item, index) => (
-                    <div
-                      className="purchase-item-row"
-                      key={index}
-                    >
                       <select
-                        value={item.productId}
+                        value={form.vendorId}
                         onChange={event =>
-                          updateItem(
-                            index,
-                            'productId',
-                            event.target.value
-                          )
+                          setForm({
+                            ...form,
+                            vendorId: event.target.value,
+                          })
                         }
                         required
                       >
                         <option value="">
-                          Select product
+                          Select vendor
                         </option>
 
-                        {products.map(product => (
+                        {vendors.map(vendor => (
                           <option
-                            key={product.id}
-                            value={product.id}
+                            key={vendor.id}
+                            value={vendor.id}
                           >
-                            {product.name}
+                            {vendor.name}
                           </option>
                         ))}
                       </select>
+                    </label>
+
+                    <label>
+                      Order date
 
                       <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={item.quantity}
+                        type="date"
+                        value={form.orderDate}
                         onChange={event =>
-                          updateItem(
-                            index,
-                            'quantity',
-                            event.target.value
-                          )
+                          setForm({
+                            ...form,
+                            orderDate: event.target.value,
+                          })
                         }
                         required
                       />
+                    </label>
+                  </div>
 
-                      <input
-                        type="number"
-                        value={item.unitPrice}
-                        readOnly
-                        tabIndex="-1"
-                        aria-label="Unit purchase price"
-                      />
-
-                      <input
-                        type="number"
-                        value={item.total}
-                        readOnly
-                        tabIndex="-1"
-                        aria-label="Total"
-                      />
+                  <div className="purchase-items">
+                    {/* COLUMN HEADINGS */}
+                    <div className="purchase-item-head">
+                      <span>PRODUCT</span>
+                      <span>QUANTITY</span>
+                      <span>UNIT PRICE</span>
+                      <span>TOTAL</span>
+                      <span>ACTION</span>
                     </div>
-                  ))}
+
+                    {/* ITEMS */}
+                    {form.items.map((item, index) => (
+                      <div
+                        className="purchase-item-row"
+                        key={index}
+                      >
+                        {/* PRODUCT */}
+                        <select
+                          value={item.productId}
+                          onChange={event =>
+                            updateItem(
+                              index,
+                              'productId',
+                              event.target.value
+                            )
+                          }
+                          required
+                        >
+                          <option value="">
+                            Select product
+                          </option>
+
+                          {products.map(product => (
+                            <option
+                              key={product.id}
+                              value={product.id}
+                            >
+                              {product.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* QUANTITY */}
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantity}
+                          onChange={event =>
+                            updateItem(
+                              index,
+                              'quantity',
+                              event.target.value
+                            )
+                          }
+                          required
+                        />
+
+                        {/* UNIT PRICE */}
+                        <span>
+                          {money(item.unitPrice)}
+                        </span>
+
+                        {/* LINE TOTAL */}
+                        <span>
+                          {money(item.total)}
+                        </span>
+
+                        {/* REMOVE */}
+                        <button
+                          type="button"
+                          className="compact-button"
+                          onClick={() =>
+                            removeItem(index)
+                          }
+                          disabled={
+                            form.items.length === 1
+                          }
+                          title="Remove item"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={addItem}
+                  >
+                    <Plus size={14} />
+                    Add item
+                  </button>
+
+                  {/* LIVE TOTAL */}
+                  <div className="purchase-total">
+                    <span>Purchase Total</span>
+
+                    <b>{money(purchaseTotal)}</b>
+                  </div>
                 </>
               )}
 
@@ -691,7 +858,7 @@ function OrdersTable({ orders, onBill }) {
                     className="compact-button primary-button"
                     onClick={() => onBill(order)}
                   >
-                    Create bill{' '}
+                    Create bill
                     <ArrowRight size={13} />
                   </button>
                 )}
